@@ -3,126 +3,279 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Random Number Generator</title>
+    <title>Lottery Number Generator</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 600px;
-            margin: 50px auto;
-            padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e22ce 100%);
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
         }
+        
         .container {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 24px;
+            padding: 30px 20px;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4);
+            max-width: 500px;
+            width: 100%;
+            backdrop-filter: blur(10px);
         }
+        
         h1 {
             text-align: center;
-            color: #333;
-            margin-bottom: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 25px;
+            font-size: 28px;
+            font-weight: 800;
         }
+        
+        .rows-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        
         .row {
             display: flex;
-            gap: 10px;
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 10px;
             align-items: center;
-            transition: transform 0.2s;
+            padding: 10px 12px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateX(-30px);
         }
-        .row:hover {
-            transform: translateX(5px);
+        
+        .row.show {
+            opacity: 1;
+            transform: translateX(0);
         }
-        .row-number {
-            font-weight: bold;
-            margin-right: 10px;
-            min-width: 30px;
+        
+        .row-label {
+            font-size: 11px;
+            font-weight: 700;
+            min-width: 45px;
+            color: rgba(255, 255, 255, 0.95);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
         }
-        .number {
-            width: 45px;
-            height: 45px;
+        
+        .numbers {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            background: white;
-            border-radius: 50%;
-            font-weight: bold;
-            font-size: 18px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            gap: 6px;
+            flex: 1;
+            justify-content: flex-end;
         }
+        
+        .number {
+            background: rgba(255, 255, 255, 0.35);
+            backdrop-filter: blur(5px);
+            padding: 6px 8px;
+            border-radius: 8px;
+            min-width: 32px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 700;
+            color: white;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.3);
+            opacity: 0;
+            transform: scale(0.5) rotateY(180deg);
+            animation: popIn 0.5s ease forwards;
+        }
+        
+        @keyframes popIn {
+            to {
+                opacity: 1;
+                transform: scale(1) rotateY(0deg);
+            }
+        }
+        
+        .number:nth-child(1) { animation-delay: 0.1s; }
+        .number:nth-child(2) { animation-delay: 0.2s; }
+        .number:nth-child(3) { animation-delay: 0.3s; }
+        .number:nth-child(4) { animation-delay: 0.4s; }
+        .number:nth-child(5) { animation-delay: 0.5s; }
+        .number:nth-child(6) { animation-delay: 0.6s; }
+        
         button {
             width: 100%;
-            padding: 15px;
-            font-size: 16px;
-            font-weight: bold;
-            color: white;
+            padding: 14px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
             cursor: pointer;
-            margin-top: 20px;
-            transition: transform 0.2s;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            position: relative;
+            overflow: hidden;
         }
-        button:hover {
-            transform: scale(1.05);
+        
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
         }
-        button:active {
-            transform: scale(0.98);
+        
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .progress-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.8);
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+        
+        .timer {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #666;
+            font-weight: 600;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🎲 Random Number Generator</h1>
-        <div id="numbers"></div>
-        <button onclick="generateNumbers()">Generate New Numbers</button>
+        <h1>🎰 Lottery Generator</h1>
+        <div class="rows-container" id="results"></div>
+        <button id="generateBtn" onclick="startGeneration()">
+            <span id="btnText">Generate Numbers</span>
+            <div class="progress-bar" id="progressBar"></div>
+        </button>
+        <div class="timer" id="timer"></div>
     </div>
 
     <script>
         const colors = [
             '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A',
             '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2',
-            '#F8B88B', '#ABEBC6'
+            '#F8B739', '#52B788'
         ];
 
-        function generateNumbers() {
-            const container = document.getElementById('numbers');
-            container.innerHTML = '';
+        let isGenerating = false;
 
-            for (let i = 0; i < 10; i++) {
-                const numbers = [];
-                while (numbers.length < 6) {
-                    const num = Math.floor(Math.random() * 49) + 1;
-                    if (!numbers.includes(num)) {
-                        numbers.push(num);
-                    }
+        function generateRandomNumbers() {
+            const numbers = [];
+            while (numbers.length < 6) {
+                const num = Math.floor(Math.random() * 49) + 1;
+                if (!numbers.includes(num)) {
+                    numbers.push(num);
                 }
-                numbers.sort((a, b) => a - b);
-
-                const row = document.createElement('div');
-                row.className = 'row';
-                row.style.backgroundColor = colors[i];
-
-                const rowNum = document.createElement('span');
-                rowNum.className = 'row-number';
-                rowNum.textContent = `${i + 1}.`;
-                row.appendChild(rowNum);
-
-                numbers.forEach(num => {
-                    const numDiv = document.createElement('div');
-                    numDiv.className = 'number';
-                    numDiv.textContent = num;
-                    row.appendChild(numDiv);
-                });
-
-                container.appendChild(row);
             }
+            return numbers.sort((a, b) => a - b);
         }
 
-        generateNumbers();
+        async function animateRow(rowDiv, numbers, delay) {
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    rowDiv.classList.add('show');
+                    
+                    const numbersDiv = rowDiv.querySelector('.numbers');
+                    numbers.forEach((num, index) => {
+                        const numSpan = document.createElement('span');
+                        numSpan.className = 'number';
+                        numSpan.textContent = num;
+                        numbersDiv.appendChild(numSpan);
+                    });
+                    
+                    setTimeout(resolve, 800);
+                }, delay);
+            });
+        }
+
+        async function startGeneration() {
+            if (isGenerating) return;
+            
+            isGenerating = true;
+            const btn = document.getElementById('generateBtn');
+            const btnText = document.getElementById('btnText');
+            const progressBar = document.getElementById('progressBar');
+            const timer = document.getElementById('timer');
+            const resultsDiv = document.getElementById('results');
+            
+            btn.disabled = true;
+            btnText.textContent = 'Generating...';
+            resultsDiv.innerHTML = '';
+            
+            const startTime = Date.now();
+            const duration = 10000;
+            
+            const progressInterval = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min((elapsed / duration) * 100, 100);
+                progressBar.style.width = progress + '%';
+                
+                const remaining = Math.ceil((duration - elapsed) / 1000);
+                if (remaining > 0) {
+                    timer.textContent = `${remaining}s remaining`;
+                } else {
+                    timer.textContent = 'Complete!';
+                }
+            }, 100);
+            
+            for (let i = 0; i < 5; i++) {
+                const numbers = generateRandomNumbers();
+                
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'row';
+                rowDiv.style.backgroundColor = colors[i];
+                
+                const label = document.createElement('span');
+                label.className = 'row-label';
+                label.textContent = `Row ${i + 1}`;
+                
+                const numbersDiv = document.createElement('div');
+                numbersDiv.className = 'numbers';
+                
+                rowDiv.appendChild(label);
+                rowDiv.appendChild(numbersDiv);
+                resultsDiv.appendChild(rowDiv);
+                
+                await animateRow(rowDiv, numbers, i * 2000);
+            }
+            
+            clearInterval(progressInterval);
+            progressBar.style.width = '100%';
+            
+            setTimeout(() => {
+                btn.disabled = false;
+                btnText.textContent = 'Generate New Numbers';
+                progressBar.style.width = '0%';
+                timer.textContent = '';
+                isGenerating = false;
+            }, 500);
+        }
+        
+        window.onload = () => {
+            startGeneration();
+        };
     </script>
 </body>
 </html>
