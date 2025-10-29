@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Number Generator</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .row {
+            display: flex;
+            gap: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            align-items: center;
+            transition: transform 0.2s;
+        }
+        .row:hover {
+            transform: translateX(5px);
+        }
+        .row-number {
+            font-weight: bold;
+            margin-right: 10px;
+            min-width: 30px;
+        }
+        .number {
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border-radius: 50%;
+            font-weight: bold;
+            font-size: 18px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: scale(1.05);
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎲 Random Number Generator</h1>
+        <div id="numbers"></div>
+        <button onclick="generateNumbers()">Generate New Numbers</button>
+    </div>
+
+    <script>
+        const colors = [
+            '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A',
+            '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2',
+            '#F8B88B', '#ABEBC6'
+        ];
+
+        function generateNumbers() {
+            const container = document.getElementById('numbers');
+            container.innerHTML = '';
+
+            for (let i = 0; i < 10; i++) {
+                const numbers = [];
+                while (numbers.length < 6) {
+                    const num = Math.floor(Math.random() * 49) + 1;
+                    if (!numbers.includes(num)) {
+                        numbers.push(num);
+                    }
+                }
+                numbers.sort((a, b) => a - b);
+
+                const row = document.createElement('div');
+                row.className = 'row';
+                row.style.backgroundColor = colors[i];
+
+                const rowNum = document.createElement('span');
+                rowNum.className = 'row-number';
+                rowNum.textContent = `${i + 1}.`;
+                row.appendChild(rowNum);
+
+                numbers.forEach(num => {
+                    const numDiv = document.createElement('div');
+                    numDiv.className = 'number';
+                    numDiv.textContent = num;
+                    row.appendChild(numDiv);
+                });
+
+                container.appendChild(row);
+            }
+        }
+
+        generateNumbers();
+    </script>
+</body>
+</html>
