@@ -1,6 +1,6 @@
 /**
  * DATA MANAGER
- * Fetches and manages candlestick data for all symbols
+ * Fetches and manages candlestick data from Deriv API
  */
 
 class DataManager {
@@ -8,13 +8,12 @@ class DataManager {
         this.ws = null;
         this.connected = false;
         this.currentSymbol = 'XAUUSD';
-        this.currentTimeframe = 300; // M5
+        this.currentTimeframe = 300;
         this.chartData = [];
         this.subscribers = [];
         this.reconnectAttempts = 0;
         this.maxReconnects = 5;
         
-        // Deriv symbol mapping
         this.symbolMap = {
             'XAUUSD': 'frxXAUUSD',
             'BTCUSD': 'cryBTCUSD',
@@ -38,16 +37,14 @@ class DataManager {
         };
     }
 
-    /**
-     * Connect to Deriv WebSocket
-     */
     async connect() {
         return new Promise((resolve, reject) => {
             try {
+                // Connect to Deriv WebSocket with proper app_id
                 this.ws = new WebSocket('wss://ws.derivws.com/websockets/v3?app_id=1089');
                 
                 this.ws.onopen = () => {
-                    console.log('✅ Connected to Deriv');
+                    console.log('✅ Connected to Deriv WebSocket');
                     this.connected = true;
                     this.reconnectAttempts = 0;
                     resolve();
@@ -64,7 +61,7 @@ class DataManager {
                 };
 
                 this.ws.onclose = () => {
-                    console.log('🔌 Disconnected');
+                    console.log('🔌 Disconnected from Deriv');
                     this.connected = false;
                     this.attemptReconnect();
                 };
@@ -75,22 +72,14 @@ class DataManager {
         });
     }
 
-    /**
-     * Attempt reconnection
-     */
     attemptReconnect() {
         if (this.reconnectAttempts < this.maxReconnects) {
             this.reconnectAttempts++;
             console.log(`🔄 Reconnecting... (${this.reconnectAttempts}/${this.maxReconnects})`);
             setTimeout(() => this.connect(), 3000);
-        } else {
-            console.error('❌ Max reconnection attempts reached');
         }
     }
 
-    /**
-     * Load chart data for symbol and timeframe
-     */
     loadData(symbol, timeframe, callback) {
         this.currentSymbol = symbol;
         this.currentTimeframe = timeframe;
@@ -100,7 +89,7 @@ class DataManager {
         }
 
         if (!this.connected) {
-            console.error('❌ Not connected to WebSocket');
+            console.error('❌ Not connected to Deriv WebSocket');
             return;
         }
 
@@ -110,7 +99,7 @@ class DataManager {
             return;
         }
 
-        // Request historical candles
+        // Request historical candles with live subscription
         const request = {
             ticks_history: derivSymbol,
             adjust_start_time: 1,
@@ -119,16 +108,13 @@ class DataManager {
             start: 1,
             style: 'candles',
             granularity: timeframe,
-            subscribe: 1
+            subscribe: 1  // Enable live updates
         };
 
-        console.log('📊 Requesting data:', symbol, this.getTimeframeName(timeframe));
+        console.log('📊 Loading live data from Deriv:', symbol, this.getTimeframeName(timeframe));
         this.ws.send(JSON.stringify(request));
     }
 
-    /**
-     * Handle incoming WebSocket messages
-     */
     handleMessage(data) {
         if (data.error) {
             console.error('❌ API Error:', data.error.message);
@@ -142,9 +128,6 @@ class DataManager {
         }
     }
 
-    /**
-     * Handle historical candles response
-     */
     handleCandles(data) {
         const candles = data.candles.map(c => ({
             time: c.epoch * 1000,
@@ -157,14 +140,9 @@ class DataManager {
 
         this.chartData = candles;
         console.log(`✅ Loaded ${candles.length} candles`);
-
-        // Notify all subscribers
         this.notifySubscribers(candles, false);
     }
 
-    /**
-     * Handle live OHLC updates
-     */
     handleOHLC(data) {
         const ohlc = data.ohlc;
         const candle = {
@@ -176,42 +154,34 @@ class DataManager {
             volume: 0
         };
 
-        // Update last candle or add new one
+        console.log('🔴 LIVE UPDATE:', this.currentSymbol, candle.close);
+
         if (this.chartData.length > 0) {
             const lastCandle = this.chartData[this.chartData.length - 1];
             if (lastCandle.time === candle.time) {
+                // Update existing candle
                 this.chartData[this.chartData.length - 1] = candle;
             } else {
+                // New candle
                 this.chartData.push(candle);
+                console.log('✅ New candle added');
             }
         } else {
             this.chartData.push(candle);
         }
 
-        // Notify subscribers of live update
         this.notifySubscribers([candle], true);
     }
 
-    /**
-     * Notify all subscribers of data updates
-     */
     notifySubscribers(data, isLiveUpdate) {
-        this.subscribers.forEach(callback => {
-            callback(data, isLiveUpdate);
-        });
+        this.subscribers.forEach(callback => callback(data, isLiveUpdate));
     }
 
-    /**
-     * Get current price
-     */
     getCurrentPrice() {
         if (this.chartData.length === 0) return null;
         return this.chartData[this.chartData.length - 1].close;
     }
 
-    /**
-     * Get price change
-     */
     getPriceChange() {
         if (this.chartData.length < 2) return { change: 0, percent: 0 };
         
@@ -223,40 +193,22 @@ class DataManager {
         return { change, percent };
     }
 
-    /**
-     * Get all chart data
-     */
     getChartData() {
         return this.chartData;
     }
 
-    /**
-     * Get price decimal places for symbol
-     */
     getDecimals(symbol) {
         return this.priceDecimals[symbol] || 5;
     }
 
-    /**
-     * Get timeframe name
-     */
     getTimeframeName(seconds) {
         const map = {
-            60: 'M1',
-            120: 'M2',
-            300: 'M5',
-            900: 'M15',
-            1800: 'M30',
-            3600: 'H1',
-            14400: 'H4',
-            86400: 'D1'
+            60: 'M1', 120: 'M2', 300: 'M5', 900: 'M15',
+            1800: 'M30', 3600: 'H1', 14400: 'H4', 86400: 'D1'
         };
         return map[seconds] || `${seconds}s`;
     }
 
-    /**
-     * Unsubscribe from current data
-     */
     unsubscribe() {
         if (this.ws && this.connected) {
             this.ws.send(JSON.stringify({ forget_all: 'candles' }));
@@ -264,9 +216,6 @@ class DataManager {
         this.subscribers = [];
     }
 
-    /**
-     * Disconnect WebSocket
-     */
     disconnect() {
         if (this.ws) {
             this.unsubscribe();
@@ -276,13 +225,9 @@ class DataManager {
         }
     }
 
-    /**
-     * Check if connected
-     */
     isConnected() {
         return this.connected;
     }
 }
 
-// Create global instance
 const dataManager = new DataManager();
