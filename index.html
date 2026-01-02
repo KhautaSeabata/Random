@@ -2,280 +2,354 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lottery Number Generator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a1a1a">
+    <title>Trading Terminal</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e22ce 100%);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            overflow-x: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #000;
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+            position: fixed;
+            width: 100vw;
         }
-        
+
         .container {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 24px;
-            padding: 30px 20px;
-            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4);
-            max-width: 500px;
-            width: 100%;
-            backdrop-filter: blur(10px);
-        }
-        
-        h1 {
-            text-align: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 25px;
-            font-size: 28px;
-            font-weight: 800;
-        }
-        
-        .rows-container {
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            margin-bottom: 20px;
+            height: 100vh;
         }
-        
-        .row {
+
+        /* Top Bar */
+        .top-bar {
+            background: #1a1a1a;
+            padding: 8px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #2a2a2a;
+            flex-shrink: 0;
+        }
+
+        .symbol-info {
             display: flex;
             align-items: center;
-            padding: 10px 12px;
-            border-radius: 12px;
-            transition: all 0.3s ease;
-            opacity: 0;
-            transform: translateX(-30px);
+            gap: 8px;
         }
-        
-        .row.show {
-            opacity: 1;
-            transform: translateX(0);
+
+        .symbol-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
         }
-        
-        .row-label {
-            font-size: 11px;
-            font-weight: 700;
-            min-width: 45px;
-            color: rgba(255, 255, 255, 0.95);
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+
+        .symbol-dropdown {
+            background: #2a2a2a;
+            border: 1px solid #3a3a3a;
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
         }
-        
-        .numbers {
+
+        .price-info {
             display: flex;
-            gap: 6px;
-            flex: 1;
-            justify-content: flex-end;
+            flex-direction: column;
+            align-items: flex-end;
         }
-        
-        .number {
-            background: rgba(255, 255, 255, 0.35);
-            backdrop-filter: blur(5px);
-            padding: 6px 8px;
-            border-radius: 8px;
-            min-width: 32px;
-            text-align: center;
-            font-size: 13px;
-            font-weight: 700;
-            color: white;
-            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-            box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.3);
-            opacity: 0;
-            transform: scale(0.5) rotateY(180deg);
-            animation: popIn 0.5s ease forwards;
-        }
-        
-        @keyframes popIn {
-            to {
-                opacity: 1;
-                transform: scale(1) rotateY(0deg);
-            }
-        }
-        
-        .number:nth-child(1) { animation-delay: 0.1s; }
-        .number:nth-child(2) { animation-delay: 0.2s; }
-        .number:nth-child(3) { animation-delay: 0.3s; }
-        .number:nth-child(4) { animation-delay: 0.4s; }
-        .number:nth-child(5) { animation-delay: 0.5s; }
-        .number:nth-child(6) { animation-delay: 0.6s; }
-        
-        button {
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 12px;
+
+        .current-price {
             font-size: 16px;
             font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            color: #4caf50;
+        }
+
+        .price-change {
+            font-size: 11px;
+            color: #4caf50;
+        }
+
+        .price-change.negative {
+            color: #f44336;
+        }
+
+        /* Chart Area */
+        .chart-container {
+            flex: 1;
             position: relative;
+            background: #0a0a0a;
             overflow: hidden;
         }
-        
-        button:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            touch-action: none;
         }
-        
-        button:active:not(:disabled) {
-            transform: translateY(0);
-        }
-        
-        button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        
-        .progress-bar {
+
+        /* Timeframe Ring (Hidden by default) */
+        .timeframe-ring {
             position: absolute;
-            bottom: 0;
-            left: 0;
-            height: 3px;
-            background: rgba(255, 255, 255, 0.8);
-            width: 0%;
-            transition: width 0.1s linear;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            background: rgba(26, 26, 26, 0.95);
+            border-radius: 50%;
+            border: 2px solid #3a3a3a;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         }
-        
-        .timer {
+
+        .timeframe-ring.show {
+            display: flex;
+            animation: scaleIn 0.2s ease;
+        }
+
+        @keyframes scaleIn {
+            from { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+            to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        .tf-wheel {
+            position: relative;
+            width: 180px;
+            height: 180px;
+        }
+
+        .tf-item {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #2a2a2a;
+            border: 2px solid #3a3a3a;
+            border-radius: 50%;
+            font-size: 11px;
+            font-weight: 700;
+            color: #888;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .tf-item.active {
+            background: #4caf50;
+            border-color: #4caf50;
+            color: #000;
+            transform: scale(1.1);
+        }
+
+        .tf-item:active {
+            transform: scale(0.95);
+        }
+
+        /* Position timeframes in a circle */
+        .tf-item:nth-child(1) { top: 0; left: 50%; transform: translate(-50%, 0); }
+        .tf-item:nth-child(2) { top: 15%; right: 15%; }
+        .tf-item:nth-child(3) { top: 50%; right: 0; transform: translate(0, -50%); }
+        .tf-item:nth-child(4) { bottom: 15%; right: 15%; }
+        .tf-item:nth-child(5) { bottom: 0; left: 50%; transform: translate(-50%, 0); }
+        .tf-item:nth-child(6) { bottom: 15%; left: 15%; }
+        .tf-item:nth-child(7) { top: 50%; left: 0; transform: translate(0, -50%); }
+        .tf-item:nth-child(8) { top: 15%; left: 15%; }
+
+        .tf-item:nth-child(1).active { transform: translate(-50%, 0) scale(1.1); }
+        .tf-item:nth-child(3).active { transform: translate(0, -50%) scale(1.1); }
+        .tf-item:nth-child(5).active { transform: translate(-50%, 0) scale(1.1); }
+        .tf-item:nth-child(7).active { transform: translate(0, -50%) scale(1.1); }
+
+        /* Loading Indicator */
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             text-align: center;
-            margin-top: 10px;
+            z-index: 10;
+        }
+
+        .loading.hidden {
+            display: none;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #2a2a2a;
+            border-top-color: #4caf50;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: #888;
             font-size: 12px;
-            color: #666;
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            background: #1a1a1a;
+            border-top: 1px solid #2a2a2a;
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0;
+            flex-shrink: 0;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            flex: 1;
+            cursor: pointer;
+            padding: 4px;
+            transition: all 0.3s;
+        }
+
+        .nav-item:active {
+            transform: scale(0.95);
+        }
+
+        .nav-icon {
+            font-size: 20px;
+            opacity: 0.5;
+            transition: opacity 0.3s;
+        }
+
+        .nav-label {
+            font-size: 10px;
             font-weight: 600;
+            opacity: 0.5;
+            text-transform: uppercase;
+            transition: opacity 0.3s;
+        }
+
+        .nav-item.active .nav-icon,
+        .nav-item.active .nav-label {
+            opacity: 1;
+        }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(26, 26, 26, 0.95);
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 2000;
+            display: none;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            border: 1px solid #3a3a3a;
+        }
+
+        .notification.show {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from { transform: translate(-50%, -20px); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🎰 Lottery Generator</h1>
-        <div class="rows-container" id="results"></div>
-        <button id="generateBtn" onclick="startGeneration()">
-            <span id="btnText">Generate Numbers</span>
-            <div class="progress-bar" id="progressBar"></div>
-        </button>
-        <div class="timer" id="timer"></div>
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <div class="symbol-info">
+                <select class="symbol-dropdown" id="symbolSelect" onchange="changeSymbol()">
+                    <option value="XAUUSD">XAUUSD</option>
+                    <option value="BTCUSD">BTCUSD</option>
+                    <option value="EURUSD">EURUSD</option>
+                    <option value="GBPUSD">GBPUSD</option>
+                    <option value="USDCAD">USDCAD</option>
+                    <option value="AUDUSD">AUDUSD</option>
+                    <option value="AUDCAD">AUDCAD</option>
+                    <option value="USDJPY">USDJPY</option>
+                </select>
+            </div>
+            <div class="price-info">
+                <div class="current-price" id="currentPrice">--</div>
+                <div class="price-change" id="priceChange">--</div>
+            </div>
+        </div>
+
+        <!-- Chart Container -->
+        <div class="chart-container">
+            <canvas id="chart"></canvas>
+            
+            <!-- Loading Indicator -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <div class="loading-text">Loading chart data...</div>
+            </div>
+
+            <!-- Timeframe Ring (appears on double-tap) -->
+            <div class="timeframe-ring" id="timeframeRing">
+                <div class="tf-wheel">
+                    <div class="tf-item" data-tf="60" onclick="selectTimeframe(60)">M1</div>
+                    <div class="tf-item" data-tf="120" onclick="selectTimeframe(120)">M2</div>
+                    <div class="tf-item active" data-tf="300" onclick="selectTimeframe(300)">M5</div>
+                    <div class="tf-item" data-tf="900" onclick="selectTimeframe(900)">M15</div>
+                    <div class="tf-item" data-tf="1800" onclick="selectTimeframe(1800)">M30</div>
+                    <div class="tf-item" data-tf="3600" onclick="selectTimeframe(3600)">H1</div>
+                    <div class="tf-item" data-tf="14400" onclick="selectTimeframe(14400)">H4</div>
+                    <div class="tf-item" data-tf="86400" onclick="selectTimeframe(86400)">D1</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav">
+            <div class="nav-item active" onclick="navigate('charts')">
+                <div class="nav-icon">📊</div>
+                <div class="nav-label">Charts</div>
+            </div>
+            <div class="nav-item" onclick="navigate('signals')">
+                <div class="nav-icon">⚡</div>
+                <div class="nav-label">Signals</div>
+            </div>
+            <div class="nav-item" onclick="navigate('settings')">
+                <div class="nav-icon">⚙️</div>
+                <div class="nav-label">Settings</div>
+            </div>
+        </div>
     </div>
 
-    <script>
-        const colors = [
-            '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A',
-            '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2',
-            '#F8B739', '#52B788'
-        ];
+    <!-- Notification -->
+    <div class="notification" id="notification"></div>
 
-        let isGenerating = false;
-
-        function generateRandomNumbers() {
-            const numbers = [];
-            while (numbers.length < 6) {
-                const num = Math.floor(Math.random() * 49) + 1;
-                if (!numbers.includes(num)) {
-                    numbers.push(num);
-                }
-            }
-            return numbers.sort((a, b) => a - b);
-        }
-
-        async function animateRow(rowDiv, numbers, delay) {
-            return new Promise(resolve => {
-                setTimeout(() => {
-                    rowDiv.classList.add('show');
-                    
-                    const numbersDiv = rowDiv.querySelector('.numbers');
-                    numbers.forEach((num, index) => {
-                        const numSpan = document.createElement('span');
-                        numSpan.className = 'number';
-                        numSpan.textContent = num;
-                        numbersDiv.appendChild(numSpan);
-                    });
-                    
-                    setTimeout(resolve, 800);
-                }, delay);
-            });
-        }
-
-        async function startGeneration() {
-            if (isGenerating) return;
-            
-            isGenerating = true;
-            const btn = document.getElementById('generateBtn');
-            const btnText = document.getElementById('btnText');
-            const progressBar = document.getElementById('progressBar');
-            const timer = document.getElementById('timer');
-            const resultsDiv = document.getElementById('results');
-            
-            btn.disabled = true;
-            btnText.textContent = 'Generating...';
-            resultsDiv.innerHTML = '';
-            
-            const startTime = Date.now();
-            const duration = 10000;
-            
-            const progressInterval = setInterval(() => {
-                const elapsed = Date.now() - startTime;
-                const progress = Math.min((elapsed / duration) * 100, 100);
-                progressBar.style.width = progress + '%';
-                
-                const remaining = Math.ceil((duration - elapsed) / 1000);
-                if (remaining > 0) {
-                    timer.textContent = `${remaining}s remaining`;
-                } else {
-                    timer.textContent = 'Complete!';
-                }
-            }, 100);
-            
-            for (let i = 0; i < 5; i++) {
-                const numbers = generateRandomNumbers();
-                
-                const rowDiv = document.createElement('div');
-                rowDiv.className = 'row';
-                rowDiv.style.backgroundColor = colors[i];
-                
-                const label = document.createElement('span');
-                label.className = 'row-label';
-                label.textContent = `Row ${i + 1}`;
-                
-                const numbersDiv = document.createElement('div');
-                numbersDiv.className = 'numbers';
-                
-                rowDiv.appendChild(label);
-                rowDiv.appendChild(numbersDiv);
-                resultsDiv.appendChild(rowDiv);
-                
-                await animateRow(rowDiv, numbers, i * 2000);
-            }
-            
-            clearInterval(progressInterval);
-            progressBar.style.width = '100%';
-            
-            setTimeout(() => {
-                btn.disabled = false;
-                btnText.textContent = 'Generate New Numbers';
-                progressBar.style.width = '0%';
-                timer.textContent = '';
-                isGenerating = false;
-            }, 500);
-        }
-        
-        window.onload = () => {
-            startGeneration();
-        };
-    </script>
+    <script src="data.js"></script>
+    <script src="chart.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
