@@ -1,0 +1,25 @@
+{
+  "name": "MzanziFx Trading Terminal",
+  "short_name": "MzanziFx",
+  "description": "Professional Forex Trading Terminal",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#1a1a1a",
+  "orientation": "portrait",
+  "scope": "./",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect fill='%231a1a1a' width='192' height='192'/%3E%3Ctext x='96' y='100' font-size='60' text-anchor='middle' fill='%234caf50' font-family='Arial Black'%3EMZ%3C/text%3E%3Ctext x='96' y='140' font-size='20' text-anchor='middle' fill='%23fff' font-family='Arial'%3EFX%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect fill='%231a1a1a' width='512' height='512'/%3E%3Ctext x='256' y='280' font-size='160' text-anchor='middle' fill='%234caf50' font-family='Arial Black'%3EMZ%3C/text%3E%3Ctext x='256' y='370' font-size='50' text-anchor='middle' fill='%23fff' font-family='Arial'%3EFX%3C/text%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
