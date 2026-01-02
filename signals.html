@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1a1a1a">
+    <title>Signals - MzanziFx</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, sans-serif; 
+            background: #000; 
+            color: #fff; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+        }
+        .header { 
+            background: #1a1a1a; 
+            padding: 15px; 
+            border-bottom: 1px solid #2a2a2a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .title { 
+            font-size: 18px; 
+            font-weight: 700; 
+        }
+        
+        .delete-selected-btn {
+            background: #f44336;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: none;
+        }
+        
+        .delete-selected-btn.show {
+            display: block;
+        }
+        
+        /* Filter Tabs */
+        .filter-tabs {
+            display: flex;
+            background: #1a1a1a;
+            padding: 10px;
+            gap: 8px;
+            overflow-x: auto;
+            border-bottom: 1px solid #2a2a2a;
+        }
+        
+        .filter-tab {
+            padding: 8px 16px;
+            background: #2a2a2a;
+            border: 1px solid #3a3a3a;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s;
+        }
+        
+        .filter-tab.active {
+            background: #4caf50;
+            border-color: #4caf50;
+            color: #000;
+        }
+        
+        /* Stats */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            padding: 15px;
+            background: #0a0a0a;
+        }
+        
+        .stat-card {
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #4caf50;
+        }
+        
+        .stat-label {
+            font-size: 10px;
+            color: #888;
+            margin-top: 4px;
+            text-transform: uppercase;
+        }
+        
+        /* Signals List */
+        .content { 
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+        
+        .signal-card {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #4caf50;
+            position: relative;
+        }
+        
+        .signal-card.sell {
+            border-left-color: #f44336;
+        }
+        
+        .signal-card.hit_sl {
+            border-left-color: #f44336;
+            opacity: 0.7;
+        }
+        
+        .signal-card.hit_tp3 {
+            border-left-color: #4caf50;
+            opacity: 0.8;
+        }
+        
+        .signal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .signal-symbol {
+            font-size: 16px;
+            font-weight: 700;
+        }
+        
+        .signal-action {
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        
+        .signal-action.buy {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4caf50;
+        }
+        
+        .signal-action.sell {
+            background: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+        }
+        
+        .signal-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+        
+        .signal-info-item {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .signal-info-label {
+            color: #888;
+        }
+        
+        .signal-info-value {
+            font-weight: 600;
+        }
+        
+        .signal-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-top: 8px;
+        }
+        
+        .signal-status.active {
+            background: rgba(33, 150, 243, 0.2);
+            color: #2196f3;
+        }
+        
+        .signal-status.hit_tp1,
+        .signal-status.hit_tp2,
+        .signal-status.hit_tp3 {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4caf50;
+        }
+        
+        .signal-status.hit_sl {
+            background: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+        }
+        
+        .signal-checkbox {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 20px;
+            height: 20px;
+        }
+        
+        .signal-reasons {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #2a2a2a;
+            font-size: 11px;
+            color: #888;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+        
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        
+        .bottom-nav { 
+            background: #1a1a1a; 
+            border-top: 1px solid #2a2a2a; 
+            display: flex; 
+            justify-content: space-around; 
+            padding: 8px 0; 
+        }
+        .nav-item { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 4px; 
+            flex: 1; 
+            cursor: pointer; 
+            padding: 4px; 
+        }
+        .nav-icon { font-size: 20px; opacity: 0.5; }
+        .nav-label { font-size: 10px; font-weight: 600; opacity: 0.5; text-transform: uppercase; }
+        .nav-item.active .nav-icon,
+        .nav-item.active .nav-label { opacity: 1; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">Signals</div>
+        <button class="delete-selected-btn" id="deleteBtn" onclick="deleteSelected()">Delete Selected</button>
+    </div>
+    
+    <div class="filter-tabs">
+        <div class="filter-tab active" onclick="filterSignals('all')">ALL</div>
+        <div class="filter-tab" onclick="filterSignals('active')">ACTIVE</div>
+        <div class="filter-tab" onclick="filterSignals('hit_tp1')">TP1</div>
+        <div class="filter-tab" onclick="filterSignals('hit_tp2')">TP2</div>
+        <div class="filter-tab" onclick="filterSignals('hit_tp3')">TP3</div>
+        <div class="filter-tab" onclick="filterSignals('hit_sl')">SL</div>
+    </div>
+    
+    <div class="stats" id="stats">
+        <div class="stat-card">
+            <div class="stat-value" id="statActive">0</div>
+            <div class="stat-label">Active</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="statTP">0</div>
+            <div class="stat-label">TP Hit</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="statSL">0</div>
+            <div class="stat-label">SL Hit</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="statWinRate">0%</div>
+            <div class="stat-label">Win Rate</div>
+        </div>
+    </div>
+    
+    <div class="content" id="signalsList">
+        <div class="empty-state">
+            <div class="empty-icon">⚡</div>
+            <div>No signals yet. Generate your first signal!</div>
+        </div>
+    </div>
+    
+    <div class="bottom-nav">
+        <div class="nav-item" onclick="window.location.href='index.html'">
+            <div class="nav-icon">📊</div>
+            <div class="nav-label">Charts</div>
+        </div>
+        <div class="nav-item active">
+            <div class="nav-icon">⚡</div>
+            <div class="nav-label">Signals</div>
+        </div>
+        <div class="nav-item" onclick="window.location.href='settings.html'">
+            <div class="nav-icon">⚙️</div>
+            <div class="nav-label">Settings</div>
+        </div>
+    </div>
+    
+    <script src="https://mzanzifx-default-rtdb.firebaseio.com/.json"></script>
+    <script>
+        const firebaseUrl = 'https://mzanzifx-default-rtdb.firebaseio.com';
+        let signals = [];
+        let selectedSignals = new Set();
+        let currentFilter = 'all';
+        
+        // Load signals on page load
+        window.addEventListener('load', loadSignals);
+        
+        async function loadSignals() {
+            try {
+                const response = await fetch(`${firebaseUrl}/signals.json`);
+                const data = await response.json();
+                
+                if (!data) {
+                    signals = [];
+                    displaySignals([]);
+                    return;
+                }
+                
+                signals = Object.keys(data).map(id => ({
+                    id,
+                    ...data[id]
+                })).sort((a, b) => b.timestamp - a.timestamp);
+                
+                updateStats();
+                displaySignals(signals);
+            } catch (error) {
+                console.error('Error loading signals:', error);
+            }
+        }
+        
+        function displaySignals(signalsToShow) {
+            const container = document.getElementById('signalsList');
+            
+            if (signalsToShow.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">⚡</div>
+                        <div>No signals in this category</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = signalsToShow.map(signal => `
+                <div class="signal-card ${signal.action.toLowerCase()} ${signal.status}">
+                    <input type="checkbox" class="signal-checkbox" 
+                           onchange="toggleSelection('${signal.id}')">
+                    
+                    <div class="signal-header">
+                        <div class="signal-symbol">${signal.symbol} ${signal.timeframe}</div>
+                        <div class="signal-action ${signal.action.toLowerCase()}">${signal.action}</div>
+                    </div>
+                    
+                    <div class="signal-info">
+                        <div class="signal-info-item">
+                            <span class="signal-info-label">Entry:</span>
+                            <span class="signal-info-value">${signal.entry.toFixed(5)}</span>
+                        </div>
+                        <div class="signal-info-item">
+                            <span class="signal-info-label">SL:</span>
+                            <span class="signal-info-value">${signal.sl.toFixed(5)}</span>
+                        </div>
+                        <div class="signal-info-item">
+                            <span class="signal-info-label">TP1:</span>
+                            <span class="signal-info-value">${signal.tp1.toFixed(5)}</span>
+                        </div>
+                        <div class="signal-info-item">
+                            <span class="signal-info-label">TP2:</span>
+                            <span class="signal-info-value">${signal.tp2.toFixed(5)}</span>
+                        </div>
+                        <div class="signal-info-item">
+                            <span class="signal-info-label">TP3:</span>
+                            <span class="signal-info-value">${signal.tp3.toFixed(5)}</span>
+                        </div>
+                        <div class="signal-info-item">
+                            <span class="signal-info-label">Confidence:</span>
+                            <span class="signal-info-value">${signal.confidence}%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="signal-status ${signal.status}">${signal.status.replace('_', ' ')}</div>
+                    
+                    <div class="signal-reasons">
+                        ${signal.reasons.map(r => `• ${r}`).join('<br>')}
+                    </div>
+                    
+                    <div style="font-size: 10px; color: #666; margin-top: 8px;">
+                        ${new Date(signal.timestamp).toLocaleString()}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function filterSignals(filter) {
+            currentFilter = filter;
+            
+            // Update active tab
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Filter signals
+            let filtered = signals;
+            if (filter !== 'all') {
+                filtered = signals.filter(s => s.status === filter);
+            }
+            
+            displaySignals(filtered);
+        }
+        
+        function toggleSelection(signalId) {
+            if (selectedSignals.has(signalId)) {
+                selectedSignals.delete(signalId);
+            } else {
+                selectedSignals.add(signalId);
+            }
+            
+            // Show/hide delete button
+            const deleteBtn = document.getElementById('deleteBtn');
+            if (selectedSignals.size > 0) {
+                deleteBtn.classList.add('show');
+            } else {
+                deleteBtn.classList.remove('show');
+            }
+        }
+        
+        async function deleteSelected() {
+            if (selectedSignals.size === 0) return;
+            
+            if (!confirm(`Delete ${selectedSignals.size} signal(s)?`)) return;
+            
+            try {
+                const promises = Array.from(selectedSignals).map(id => 
+                    fetch(`${firebaseUrl}/signals/${id}.json`, { method: 'DELETE' })
+                );
+                
+                await Promise.all(promises);
+                
+                selectedSignals.clear();
+                document.getElementById('deleteBtn').classList.remove('show');
+                
+                await loadSignals();
+            } catch (error) {
+                console.error('Error deleting signals:', error);
+            }
+        }
+        
+        function updateStats() {
+            const active = signals.filter(s => s.status === 'active').length;
+            const tp = signals.filter(s => s.status.startsWith('hit_tp')).length;
+            const sl = signals.filter(s => s.status === 'hit_sl').length;
+            const winRate = signals.length > 0 ? ((tp / signals.length) * 100).toFixed(1) : 0;
+            
+            document.getElementById('statActive').textContent = active;
+            document.getElementById('statTP').textContent = tp;
+            document.getElementById('statSL').textContent = sl;
+            document.getElementById('statWinRate').textContent = winRate + '%';
+        }
+        
+        // Auto-refresh every 10 seconds
+        setInterval(loadSignals, 10000);
+    </script>
+</body>
+</html>

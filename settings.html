@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1a1a1a">
+    <title>Settings - MzanziFx</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, sans-serif; 
+            background: #000; 
+            color: #fff; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+        }
+        .header { 
+            background: #1a1a1a; 
+            padding: 15px; 
+            border-bottom: 1px solid #2a2a2a; 
+        }
+        .title { 
+            font-size: 18px; 
+            font-weight: 700; 
+        }
+        .content { 
+            flex: 1; 
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .setting-group {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .setting-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #4caf50;
+            margin-bottom: 10px;
+        }
+        
+        .setting-description {
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #2a2a2a;
+        }
+        
+        .setting-row:last-child {
+            border-bottom: none;
+        }
+        
+        .setting-label {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        /* Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 28px;
+        }
+        
+        .toggle-input {
+            display: none;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #2a2a2a;
+            transition: .3s;
+            border-radius: 28px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+        
+        .toggle-input:checked + .toggle-slider {
+            background-color: #4caf50;
+        }
+        
+        .toggle-input:checked + .toggle-slider:before {
+            transform: translateX(22px);
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #666;
+            margin-left: 8px;
+        }
+        
+        .status-indicator.active {
+            background: #4caf50;
+            box-shadow: 0 0 10px #4caf50;
+        }
+        
+        .bottom-nav { 
+            background: #1a1a1a; 
+            border-top: 1px solid #2a2a2a; 
+            display: flex; 
+            justify-content: space-around; 
+            padding: 8px 0; 
+        }
+        .nav-item { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 4px; 
+            flex: 1; 
+            cursor: pointer; 
+            padding: 4px; 
+        }
+        .nav-icon { font-size: 20px; opacity: 0.5; }
+        .nav-label { font-size: 10px; font-weight: 600; opacity: 0.5; text-transform: uppercase; }
+        .nav-item.active .nav-icon,
+        .nav-item.active .nav-label { opacity: 1; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">Settings</div>
+    </div>
+    
+    <div class="content">
+        <!-- Auto-Generate Signals -->
+        <div class="setting-group">
+            <div class="setting-title">🤖 Auto-Generate Signals</div>
+            <div class="setting-description">
+                Automatically analyze the market and generate trading signals every 5 minutes. 
+                You'll receive notifications with vibration and sound when new signals are found.
+            </div>
+            <div class="setting-row">
+                <div class="setting-label">
+                    Auto-Generate
+                    <span class="status-indicator" id="autoGenStatus"></span>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" class="toggle-input" id="autoGenerateToggle" onchange="toggleAutoGenerate()">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+        
+        <!-- Notifications -->
+        <div class="setting-group">
+            <div class="setting-title">🔔 Notifications</div>
+            <div class="setting-description">
+                Enable browser notifications and vibration alerts for new signals.
+            </div>
+            <div class="setting-row">
+                <div class="setting-label">Notifications</div>
+                <button onclick="requestNotifications()" style="
+                    background: #4caf50;
+                    color: #fff;
+                    border: none;
+                    padding: 8px 16px;
+                    border-radius: 20px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    cursor: pointer;
+                " id="notifBtn">Enable</button>
+            </div>
+        </div>
+        
+        <!-- Signal Tracker -->
+        <div class="setting-group">
+            <div class="setting-title">📊 Signal Tracker</div>
+            <div class="setting-description">
+                Track signal performance in real-time. Automatically updates when signals hit TP or SL.
+            </div>
+            <div class="setting-row">
+                <div class="setting-label">
+                    Tracker Status
+                    <span class="status-indicator active"></span>
+                </div>
+                <div style="font-size: 12px; color: #4caf50; font-weight: 600;">ACTIVE</div>
+            </div>
+        </div>
+        
+        <!-- About -->
+        <div class="setting-group">
+            <div class="setting-title">ℹ️ About</div>
+            <div class="setting-description">
+                MzanziFx Trading Terminal<br>
+                Version 1.0.0<br><br>
+                <strong>Analysis Methods:</strong><br>
+                • Smart Money Concepts (SMC)<br>
+                • Inner Circle Trader (ICT)<br>
+                • Concept Trading Refined (CTR)<br>
+                • Wyckoff Method<br>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bottom-nav">
+        <div class="nav-item" onclick="window.location.href='index.html'">
+            <div class="nav-icon">📊</div>
+            <div class="nav-label">Charts</div>
+        </div>
+        <div class="nav-item" onclick="window.location.href='signals.html'">
+            <div class="nav-icon">⚡</div>
+            <div class="nav-label">Signals</div>
+        </div>
+        <div class="nav-item active">
+            <div class="nav-icon">⚙️</div>
+            <div class="nav-label">Settings</div>
+        </div>
+    </div>
+    
+    <script>
+        // Load saved settings
+        window.addEventListener('load', () => {
+            const autoGenerate = localStorage.getItem('autoGenerate') === 'true';
+            document.getElementById('autoGenerateToggle').checked = autoGenerate;
+            updateAutoGenStatus(autoGenerate);
+            
+            // Check notification permission
+            if ('Notification' in window) {
+                if (Notification.permission === 'granted') {
+                    document.getElementById('notifBtn').textContent = 'Enabled';
+                    document.getElementById('notifBtn').style.background = '#2a2a2a';
+                }
+            }
+        });
+        
+        function toggleAutoGenerate() {
+            const enabled = document.getElementById('autoGenerateToggle').checked;
+            localStorage.setItem('autoGenerate', enabled ? 'true' : 'false');
+            updateAutoGenStatus(enabled);
+            
+            // Show notification
+            alert(enabled ? '🤖 Auto-generate activated!\n\nSignals will be generated every 5 minutes.' : 
+                          '🛑 Auto-generate deactivated');
+        }
+        
+        function updateAutoGenStatus(active) {
+            const indicator = document.getElementById('autoGenStatus');
+            if (active) {
+                indicator.classList.add('active');
+            } else {
+                indicator.classList.remove('active');
+            }
+        }
+        
+        function requestNotifications() {
+            if ('Notification' in window) {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        document.getElementById('notifBtn').textContent = 'Enabled';
+                        document.getElementById('notifBtn').style.background = '#2a2a2a';
+                        
+                        new Notification('🎉 Notifications Enabled!', {
+                            body: 'You will now receive trading signal alerts',
+                            icon: '/icon-192.png'
+                        });
+                    }
+                });
+            } else {
+                alert('⚠️ Notifications not supported on this device');
+            }
+        }
+    </script>
+</body>
+</html>
