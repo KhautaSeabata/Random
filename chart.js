@@ -35,37 +35,90 @@ class ChartRenderer {
     }
 
     setupInteraction() {
+        let touchTimeout;
+        let lastPinchDistance = 0;
+        let isPinching = false;
+        
+        // Touch start
         this.canvas.addEventListener('touchstart', (e) => {
-            const now = Date.now();
-            const timeDiff = now - this.lastTouchTime;
-            
-            if (timeDiff < 300 && timeDiff > 0) {
+            if (e.touches.length === 2) {
+                // Two fingers - pinch zoom
+                isPinching = true;
+                lastPinchDistance = this.getPinchDistance(e.touches);
                 e.preventDefault();
-                this.showTimeframeRing();
                 return;
             }
             
-            this.lastTouchTime = now;
-            this.isDragging = true;
-            this.dragStart = e.touches[0].clientX;
-            this.dragStartOffset = this.offset;
-            this.autoScroll = false;
+            if (e.touches.length === 1) {
+                const now = Date.now();
+                const timeDiff = now - this.lastTouchTime;
+                
+                // Double-tap detection
+                if (timeDiff < 300 && timeDiff > 0) {
+                    e.preventDefault();
+                    this.showTimeframeRing();
+                    return;
+                }
+                
+                this.lastTouchTime = now;
+                this.isDragging = true;
+                this.dragStart = e.touches[0].clientX;
+                this.dragStartOffset = this.offset;
+                this.autoScroll = false;
+            }
+            
             e.preventDefault();
         }, { passive: false });
 
+        // Touch move
         this.canvas.addEventListener('touchmove', (e) => {
-            if (this.isDragging) {
+            if (e.touches.length === 2 && isPinching) {
+                // Pinch zoom
+                const distance = this.getPinchDistance(e.touches);
+                const delta = distance - lastPinchDistance;
+                
+                // Adjust zoom based on pinch
+                this.zoom = Math.max(20, Math.min(200, this.zoom + delta * 0.5));
+                lastPinchDistance = distance;
+                this.draw();
+                e.preventDefault();
+                return;
+            }
+            
+            if (this.isDragging && e.touches.length === 1) {
+                // Pan
                 const delta = e.touches[0].clientX - this.dragStart;
                 const candleDelta = Math.floor(delta / (this.zoom / 2));
                 this.offset = Math.max(0, this.dragStartOffset + candleDelta);
                 this.draw();
             }
+            
             e.preventDefault();
         }, { passive: false });
 
-        this.canvas.addEventListener('touchend', () => {
-            this.isDragging = false;
+        // Touch end
+        this.canvas.addEventListener('touchend', (e) => {
+            if (e.touches.length < 2) {
+                isPinching = false;
+            }
+            if (e.touches.length === 0) {
+                this.isDragging = false;
+            }
         });
+        
+        // Mouse wheel zoom (for desktop)
+        this.canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? -5 : 5;
+            this.zoom = Math.max(20, Math.min(200, this.zoom + delta));
+            this.draw();
+        }, { passive: false });
+    }
+
+    getPinchDistance(touches) {
+        const dx = touches[0].clientX - touches[1].clientX;
+        const dy = touches[0].clientY - touches[1].clientY;
+        return Math.sqrt(dx * dx + dy * dy);
     }
 
     showTimeframeRing() {
@@ -173,5 +226,22 @@ class ChartRenderer {
 
     getChartData() {
         return this.chartData;
+    }
+    
+    zoomIn() {
+        this.zoom = Math.min(200, this.zoom + 15);
+        this.draw();
+    }
+    
+    zoomOut() {
+        this.zoom = Math.max(20, this.zoom - 15);
+        this.draw();
+    }
+    
+    resetZoom() {
+        this.zoom = 80;
+        this.offset = 0;
+        this.autoScroll = true;
+        this.draw();
     }
 }
