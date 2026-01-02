@@ -1,6 +1,7 @@
 /**
- * DATA MANAGER
+ * DATA MANAGER - MT5 STYLE
  * Fetches and manages candlestick data from Deriv API
+ * Updates current candle until timeframe ends, then creates new candle
  */
 
 class DataManager {
@@ -8,7 +9,7 @@ class DataManager {
         this.ws = null;
         this.connected = false;
         this.currentSymbol = 'XAUUSD';
-        this.currentTimeframe = 300;
+        this.currentTimeframe = 300; // seconds
         this.chartData = [];
         this.subscribers = [];
         this.reconnectAttempts = 0;
@@ -40,7 +41,6 @@ class DataManager {
     async connect() {
         return new Promise((resolve, reject) => {
             try {
-                // Connect to Deriv WebSocket with proper app_id
                 this.ws = new WebSocket('wss://ws.derivws.com/websockets/v3?app_id=1089');
                 
                 this.ws.onopen = () => {
@@ -108,7 +108,7 @@ class DataManager {
             start: 1,
             style: 'candles',
             granularity: timeframe,
-            subscribe: 1  // Enable live updates
+            subscribe: 1
         };
 
         console.log('📊 Loading live data from Deriv:', symbol, this.getTimeframeName(timeframe));
@@ -139,38 +139,68 @@ class DataManager {
         }));
 
         this.chartData = candles;
-        console.log(`✅ Loaded ${candles.length} candles`);
+        console.log(`✅ Loaded ${candles.length} historical candles`);
         this.notifySubscribers(candles, false);
     }
 
+    /**
+     * Handle live OHLC ticks - MT5 STYLE
+     * Updates current candle until timeframe ends, then creates new candle
+     */
     handleOHLC(data) {
         const ohlc = data.ohlc;
-        const candle = {
-            time: ohlc.epoch * 1000,
-            open: parseFloat(ohlc.open),
-            high: parseFloat(ohlc.high),
-            low: parseFloat(ohlc.low),
-            close: parseFloat(ohlc.close),
-            volume: 0
-        };
+        
+        // Get the tick's actual timestamp
+        const tickTime = ohlc.epoch * 1000;
+        
+        // Calculate which candle period this tick belongs to
+        // This aligns ticks to the correct candle boundary
+        const candlePeriodStart = Math.floor(ohlc.epoch / this.currentTimeframe) * this.currentTimeframe * 1000;
+        
+        console.log('🔴 LIVE TICK:', this.currentSymbol, parseFloat(ohlc.close).toFixed(this.getDecimals(this.currentSymbol)));
 
-        console.log('🔴 LIVE UPDATE:', this.currentSymbol, candle.close);
-
-        if (this.chartData.length > 0) {
-            const lastCandle = this.chartData[this.chartData.length - 1];
-            if (lastCandle.time === candle.time) {
-                // Update existing candle
-                this.chartData[this.chartData.length - 1] = candle;
-            } else {
-                // New candle
-                this.chartData.push(candle);
-                console.log('✅ New candle added');
-            }
-        } else {
-            this.chartData.push(candle);
+        if (this.chartData.length === 0) {
+            // First tick - create first candle
+            this.chartData.push({
+                time: candlePeriodStart,
+                open: parseFloat(ohlc.open),
+                high: parseFloat(ohlc.high),
+                low: parseFloat(ohlc.low),
+                close: parseFloat(ohlc.close),
+                volume: 0
+            });
+            console.log('✅ First candle created at', new Date(candlePeriodStart).toLocaleTimeString());
+            this.notifySubscribers([this.chartData[this.chartData.length - 1]], true);
+            return;
         }
 
-        this.notifySubscribers([candle], true);
+        const lastCandle = this.chartData[this.chartData.length - 1];
+        
+        // Check if this tick belongs to the same candle period
+        if (candlePeriodStart === lastCandle.time) {
+            // SAME CANDLE PERIOD - UPDATE CURRENT CANDLE (MT5 BEHAVIOR)
+            lastCandle.high = Math.max(lastCandle.high, parseFloat(ohlc.high));
+            lastCandle.low = Math.min(lastCandle.low, parseFloat(ohlc.low));
+            lastCandle.close = parseFloat(ohlc.close);
+            // Keep original open and time
+            
+            console.log('📊 Updating candle | O:', lastCandle.open.toFixed(2), 'H:', lastCandle.high.toFixed(2), 'L:', lastCandle.low.toFixed(2), 'C:', lastCandle.close.toFixed(2));
+        } else {
+            // NEW CANDLE PERIOD - CREATE NEW CANDLE
+            const newCandle = {
+                time: candlePeriodStart,
+                open: parseFloat(ohlc.open),
+                high: parseFloat(ohlc.high),
+                low: parseFloat(ohlc.low),
+                close: parseFloat(ohlc.close),
+                volume: 0
+            };
+            
+            this.chartData.push(newCandle);
+            console.log('✅ NEW CANDLE at', new Date(candlePeriodStart).toLocaleTimeString());
+        }
+
+        this.notifySubscribers([this.chartData[this.chartData.length - 1]], true);
     }
 
     notifySubscribers(data, isLiveUpdate) {

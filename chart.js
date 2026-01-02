@@ -82,9 +82,19 @@ class ChartRenderer {
 
     updateLastCandle(candle) {
         if (this.chartData.length > 0) {
+            // Replace the last candle with updated one
             this.chartData[this.chartData.length - 1] = candle;
-            this.draw();
+        } else {
+            // If no candles yet, add this one
+            this.chartData.push(candle);
         }
+        
+        // Always keep view at latest candle if auto-scroll is on
+        if (this.autoScroll) {
+            this.offset = 0;
+        }
+        
+        this.draw();
     }
 
     draw() {
