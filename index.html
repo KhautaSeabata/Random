@@ -349,6 +349,35 @@
             transform: scale(0.9);
             background: rgba(76, 175, 80, 0.3);
         }
+        
+        /* Generate Signal Button */
+        .generate-btn {
+            position: absolute;
+            right: 10px;
+            bottom: 70px;
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #4caf50, #45a049);
+            border: none;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #fff;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+            z-index: 100;
+            transition: all 0.3s;
+        }
+        
+        .generate-btn:active {
+            transform: scale(0.9);
+        }
+        
+        .generate-btn.loading {
+            animation: spin 1s linear infinite;
+        }
     </style>
 </head>
 <body>
@@ -387,6 +416,11 @@
                 <button class="zoom-btn" onclick="resetView()" title="Reset View">↺</button>
                 <button class="zoom-btn" onclick="zoomOut()" title="Zoom Out">−</button>
             </div>
+            
+            <!-- Generate Signal Button -->
+            <button class="generate-btn" id="generateBtn" onclick="generateSignal()" title="Generate Signal">
+                ⚡
+            </button>
             
             <!-- Loading Indicator -->
             <div class="loading" id="loading">
@@ -431,6 +465,8 @@
 
     <script src="data.js"></script>
     <script src="chart.js"></script>
+    <script src="analysis.js"></script>
+    <script src="tracker.js"></script>
     <script src="app.js"></script>
     
     <script>
