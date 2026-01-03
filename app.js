@@ -52,6 +52,9 @@ function loadChartData() {
             if (data && data.length > 0) {
                 chart.updateLastCandle(data[0]);
                 updatePriceDisplay();
+                
+                // Analyze and draw SMC on every update
+                analyzeSMC();
             }
         } else {
             // Set full chart data
@@ -64,11 +67,37 @@ function loadChartData() {
                 if (loading) loading.classList.add('hidden');
                 
                 updatePriceDisplay();
+                
+                // Initial SMC analysis
+                analyzeSMC();
             } else {
                 console.warn('⚠️ No data received');
             }
         }
     });
+}
+
+/**
+ * Analyze SMC and update chart drawings
+ */
+function analyzeSMC() {
+    try {
+        const candles = dataManager.getChartData();
+        if (!candles || candles.length < 50) return;
+        
+        // Run analysis (without generating signal)
+        smcAnalyzer.analyze(candles, currentSymbol, currentTimeframe);
+        
+        // Get drawable elements
+        const drawings = smcAnalyzer.getDrawables();
+        
+        // Update chart with drawings
+        if (chart && drawings) {
+            chart.updateDrawings(drawings);
+        }
+    } catch (error) {
+        console.error('❌ SMC analysis error:', error);
+    }
 }
 
 function updatePriceDisplay() {

@@ -1,5 +1,5 @@
 // Service Worker for MzanziFx
-const CACHE_NAME = 'mzanzifx-v3'; // VERSION 3 - Updated
+const CACHE_NAME = 'mzanzifx-v4'; // VERSION 4 - SMC Drawing + Chart improvements
 const urlsToCache = [
   './',
   './index.html',
@@ -18,7 +18,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('✅ Cache opened - v3');
+        console.log('✅ Cache opened - v4');
         return cache.addAll(urlsToCache);
       })
   );
