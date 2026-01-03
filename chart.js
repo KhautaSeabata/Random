@@ -13,7 +13,7 @@ class ChartRenderer {
         this.ctx = this.canvas.getContext('2d');
         this.chartData = [];
         this.zoom = 80;          // Default zoom
-        this.minZoom = 10;       // Minimum zoom (smallest candles)
+        this.minZoom = 1;       // Minimum zoom (smallest candles)
         this.maxZoom = 200;      // Maximum zoom (biggest candles)
         this.offset = 0;
         this.autoScroll = true;
