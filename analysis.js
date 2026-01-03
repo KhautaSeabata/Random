@@ -29,9 +29,9 @@ class SMCAnalyzer {
     }
 
     /**
-     * Main analysis function
+     * Main analysis function (async for news)
      */
-    analyze(candles, symbol, timeframe) {
+    async analyze(candles, symbol, timeframe) {
         if (!candles || candles.length < 100) {
             console.warn('⚠️ Not enough candles for SMC analysis');
             return null;
@@ -50,11 +50,25 @@ class SMCAnalyzer {
         this.calculatePremiumDiscount();
         this.analyzeWyckoff();
         
-        // Generate signal
-        const signal = this.generateSignal(symbol, timeframe);
+        // Generate signal (now async for news)
+        const signal = await this.generateSignal(symbol, timeframe);
         
         console.log('✅ SMC analysis complete');
         return signal;
+    }
+
+    /**
+     * Get drawable elements for chart
+     */
+    getDrawables() {
+        return {
+            orderBlocks: this.analysis.orderBlocks || [],
+            fvgs: this.analysis.fvgs || [],
+            liquidityZones: this.analysis.liquidityZones || [],
+            trendlines: this.analysis.trendlines || [],
+            supportResistance: this.analysis.supportResistance || [],
+            premiumDiscount: this.analysis.premiumDiscount || null
+        };
     }
 
     /**

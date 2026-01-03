@@ -6,7 +6,7 @@
 
 class NewsAnalyzer {
   constructor() {
-    this.finnhubKey = 'demo'; // Free demo key (get yours at finnhub.io)
+    this.finnhubKey = 'd5cmp01r01qvl80l6k0gd5cmp01r01qvl80l6k10'; // Finnhub API Key
     this.alphaVantageKey = 'demo'; // Get free key at alphavantage.co
     this.cache = new Map();
     this.cacheTime = 5 * 60 * 1000; // 5 minutes

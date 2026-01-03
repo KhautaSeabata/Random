@@ -46,7 +46,7 @@ window.addEventListener('load', async () => {
 function loadChartData() {
     console.log(`📊 Loading ${currentSymbol} ${dataManager.getTimeframeName(currentTimeframe)}`);
     
-    dataManager.loadData(currentSymbol, currentTimeframe, (data, isLiveUpdate) => {
+    dataManager.loadData(currentSymbol, currentTimeframe, async (data, isLiveUpdate) => {
         if (isLiveUpdate) {
             // Update last candle
             if (data && data.length > 0) {
@@ -54,7 +54,7 @@ function loadChartData() {
                 updatePriceDisplay();
                 
                 // Analyze and draw SMC on every update
-                analyzeSMC();
+                await analyzeSMC();
             }
         } else {
             // Set full chart data
@@ -69,7 +69,7 @@ function loadChartData() {
                 updatePriceDisplay();
                 
                 // Initial SMC analysis
-                analyzeSMC();
+                await analyzeSMC();
             } else {
                 console.warn('⚠️ No data received');
             }
@@ -80,13 +80,13 @@ function loadChartData() {
 /**
  * Analyze SMC and update chart drawings
  */
-function analyzeSMC() {
+async function analyzeSMC() {
     try {
         const candles = dataManager.getChartData();
         if (!candles || candles.length < 50) return;
         
         // Run analysis (without generating signal)
-        smcAnalyzer.analyze(candles, currentSymbol, currentTimeframe);
+        await smcAnalyzer.analyze(candles, currentSymbol, currentTimeframe);
         
         // Get drawable elements
         const drawings = smcAnalyzer.getDrawables();
@@ -219,7 +219,7 @@ function showNotification(message) {
 }
 
 /**
- * Generate trading signal
+ * Generate trading signal with news analysis
  */
 async function generateSignal() {
     // Handle both button IDs (top and bottom)
@@ -229,7 +229,7 @@ async function generateSignal() {
     if (btnTop) btnTop.classList.add('loading');
     if (btnBottom) btnBottom.classList.add('loading');
     
-    showNotification('🔍 Analyzing market...');
+    showNotification('🔍 Analyzing market + news...');
     
     try {
         const candles = dataManager.getChartData();
@@ -241,8 +241,8 @@ async function generateSignal() {
             return;
         }
         
-        // Run SMC analysis
-        const signal = smcAnalyzer.analyze(candles, currentSymbol, currentTimeframe);
+        // Run SMC analysis (now async for news)
+        const signal = await smcAnalyzer.analyze(candles, currentSymbol, currentTimeframe);
         
         if (signal) {
             // Save to Firebase
