@@ -193,8 +193,12 @@ function showNotification(message) {
  * Generate trading signal
  */
 async function generateSignal() {
-    const btn = document.getElementById('generateBtn');
-    if (btn) btn.classList.add('loading');
+    // Handle both button IDs (top and bottom)
+    const btnTop = document.getElementById('generateBtnTop');
+    const btnBottom = document.getElementById('generateBtn');
+    
+    if (btnTop) btnTop.classList.add('loading');
+    if (btnBottom) btnBottom.classList.add('loading');
     
     showNotification('🔍 Analyzing market...');
     
@@ -203,7 +207,8 @@ async function generateSignal() {
         
         if (!candles || candles.length < 100) {
             showNotification('⚠️ Not enough data');
-            if (btn) btn.classList.remove('loading');
+            if (btnTop) btnTop.classList.remove('loading');
+            if (btnBottom) btnBottom.classList.remove('loading');
             return;
         }
         
@@ -226,7 +231,8 @@ async function generateSignal() {
         showNotification('❌ Generation failed');
     }
     
-    if (btn) btn.classList.remove('loading');
+    if (btnTop) btnTop.classList.remove('loading');
+    if (btnBottom) btnBottom.classList.remove('loading');
 }
 
 /**

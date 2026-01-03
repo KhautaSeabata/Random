@@ -1,5 +1,5 @@
 // Service Worker for MzanziFx
-const CACHE_NAME = 'mzanzifx-v1';
+const CACHE_NAME = 'mzanzifx-v3'; // VERSION 3 - Updated
 const urlsToCache = [
   './',
   './index.html',
@@ -8,6 +8,8 @@ const urlsToCache = [
   './data.js',
   './chart.js',
   './app.js',
+  './analysis.js',
+  './tracker.js',
   './manifest.json'
 ];
 
@@ -16,7 +18,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('✅ Cache opened');
+        console.log('✅ Cache opened - v3');
         return cache.addAll(urlsToCache);
       })
   );
@@ -43,18 +45,17 @@ self.addEventListener('activate', (event) => {
 // Fetch event - serve from cache, fallback to network
 self.addEventListener('fetch', (event) => {
   // Skip WebSocket requests
-  if (event.request.url.includes('ws.derivws.com')) {
+  if (event.request.url.includes('ws.derivws.com') || 
+      event.request.url.includes('firebase')) {
     return;
   }
   
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
-        // Return cached version or fetch from network
         return response || fetch(event.request);
       })
       .catch(() => {
-        // If both cache and network fail, return offline page
         return caches.match('./index.html');
       })
   );

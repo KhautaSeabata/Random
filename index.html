@@ -76,27 +76,56 @@
             flex-shrink: 0;
         }
 
-        .symbol-info {
+        .left-controls {
             display: flex;
             align-items: center;
             gap: 8px;
+            flex: 1;
         }
 
         .app-title {
             font-size: 14px;
             font-weight: 700;
             color: #4caf50;
-            margin-right: 8px;
         }
 
         .symbol-dropdown {
             background: #2a2a2a;
             border: 1px solid #3a3a3a;
             color: #fff;
-            padding: 4px 8px;
+            padding: 6px 10px;
             border-radius: 4px;
             font-size: 12px;
             font-weight: 600;
+        }
+
+        /* Generate Button - Next to Symbol */
+        .generate-btn-top {
+            background: linear-gradient(135deg, #4caf50, #45a049);
+            border: none;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 2px 10px rgba(76, 175, 80, 0.3);
+            transition: all 0.3s;
+        }
+
+        .generate-btn-top:active {
+            transform: scale(0.95);
+        }
+
+        .generate-btn-top.loading {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
         .price-info {
@@ -236,10 +265,6 @@
             margin: 0 auto 10px;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
         .loading-text {
             color: #888;
             font-size: 12px;
@@ -276,35 +301,6 @@
         .zoom-btn:active {
             transform: scale(0.9);
             background: rgba(76, 175, 80, 0.3);
-        }
-        
-        /* Generate Signal Button */
-        .generate-btn {
-            position: absolute;
-            right: 10px;
-            bottom: 70px;
-            width: 56px;
-            height: 56px;
-            background: linear-gradient(135deg, #4caf50, #45a049);
-            border: none;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 28px;
-            color: #fff;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
-            z-index: 100;
-            transition: all 0.3s;
-        }
-        
-        .generate-btn:active {
-            transform: scale(0.9);
-        }
-        
-        .generate-btn.loading {
-            animation: spin 1s linear infinite;
         }
 
         /* Bottom Navigation */
@@ -387,7 +383,7 @@
     <div class="container">
         <!-- Top Bar -->
         <div class="top-bar">
-            <div class="symbol-info">
+            <div class="left-controls">
                 <div class="app-title">MzanziFx</div>
                 <select class="symbol-dropdown" id="symbolSelect" onchange="changeSymbol()">
                     <option value="XAUUSD">XAUUSD</option>
@@ -399,6 +395,10 @@
                     <option value="AUDCAD">AUDCAD</option>
                     <option value="USDJPY">USDJPY</option>
                 </select>
+                <button class="generate-btn-top" id="generateBtnTop" onclick="generateSignal()">
+                    <span>⚡</span>
+                    <span>Generate</span>
+                </button>
             </div>
             <div class="price-info">
                 <div class="current-price" id="currentPrice">--</div>
@@ -416,11 +416,6 @@
                 <button class="zoom-btn" onclick="resetView()" title="Reset View">↺</button>
                 <button class="zoom-btn" onclick="zoomOut()" title="Zoom Out">−</button>
             </div>
-            
-            <!-- Generate Signal Button -->
-            <button class="generate-btn" id="generateBtn" onclick="generateSignal()" title="Generate Signal">
-                ⚡
-            </button>
             
             <!-- Loading Indicator -->
             <div class="loading" id="loading">
@@ -474,27 +469,20 @@
         let deferredPrompt;
         const installBtn = document.getElementById('installBtn');
 
-        // Listen for beforeinstallprompt event
         window.addEventListener('beforeinstallprompt', (e) => {
             console.log('📱 Install prompt available');
             e.preventDefault();
             deferredPrompt = e;
-            
-            // Show install button
             installBtn.classList.add('show');
         });
 
-        // Install button click handler
         installBtn.addEventListener('click', async () => {
             if (!deferredPrompt) {
                 console.log('❌ No install prompt available');
                 return;
             }
 
-            // Show install prompt
             deferredPrompt.prompt();
-            
-            // Wait for user choice
             const { outcome } = await deferredPrompt.userChoice;
             console.log(`👤 User choice: ${outcome}`);
             
@@ -502,19 +490,13 @@
                 showNotification('✅ App installing...');
             }
             
-            // Clear prompt
             deferredPrompt = null;
-            
-            // Hide install button
             installBtn.classList.remove('show');
         });
 
-        // Listen for successful installation
         window.addEventListener('appinstalled', () => {
             console.log('✅ App installed successfully');
             showNotification('✅ MzanziFx installed!');
-            
-            // Hide install button
             installBtn.classList.remove('show');
             deferredPrompt = null;
         });
@@ -523,14 +505,13 @@
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js')
                 .then((registration) => {
-                    console.log('✅ Service Worker registered:', registration.scope);
+                    console.log('✅ Service Worker v3 registered');
                 })
                 .catch((error) => {
                     console.error('❌ Service Worker registration failed:', error);
                 });
         }
 
-        // Check if already installed (running in standalone mode)
         if (window.matchMedia('(display-mode: standalone)').matches) {
             console.log('✅ App is installed and running standalone');
             installBtn.style.display = 'none';
