@@ -9,62 +9,118 @@ let currentTimeframe = 300;
 window.addEventListener('load', async () => {
     console.log('🚀 Initializing MzanziFx...');
     
+    // Initialize chart first
     chart = new ChartRenderer('chart');
     
     try {
-        document.getElementById('loading').classList.remove('hidden');
+        // Show loading
+        const loading = document.getElementById('loading');
+        if (loading) loading.classList.remove('hidden');
+        
+        // Connect to Deriv
+        console.log('📡 Connecting to Deriv...');
         await dataManager.connect();
+        
+        // Load chart data
+        console.log('📊 Loading chart data...');
         loadChartData();
+        
+        // Start signal tracker
+        console.log('📈 Starting tracker...');
+        signalTracker.startTracking();
+        
+        // Check if auto-generate is enabled
+        const autoGenerate = localStorage.getItem('autoGenerate') === 'true';
+        if (autoGenerate) {
+            console.log('🤖 Auto-generate enabled');
+            startAutoGenerate();
+        }
+        
     } catch (error) {
-        console.error('Failed to connect:', error);
-        showNotification('Connection failed. Retrying...');
+        console.error('❌ Initialization error:', error);
+        showNotification('⚠️ Connection failed. Retrying...');
         setTimeout(() => window.location.reload(), 3000);
     }
 });
 
 function loadChartData() {
-    console.log(`📊 Loading ${currentSymbol}`);
+    console.log(`📊 Loading ${currentSymbol} ${dataManager.getTimeframeName(currentTimeframe)}`);
     
     dataManager.loadData(currentSymbol, currentTimeframe, (data, isLiveUpdate) => {
         if (isLiveUpdate) {
-            chart.updateLastCandle(data[0]);
-            updatePriceDisplay();
+            // Update last candle
+            if (data && data.length > 0) {
+                chart.updateLastCandle(data[0]);
+                updatePriceDisplay();
+            }
         } else {
-            chart.setData(data);
-            document.getElementById('loading').classList.add('hidden');
-            updatePriceDisplay();
+            // Set full chart data
+            if (data && data.length > 0) {
+                console.log(`✅ Got ${data.length} candles`);
+                chart.setData(data);
+                
+                // Hide loading
+                const loading = document.getElementById('loading');
+                if (loading) loading.classList.add('hidden');
+                
+                updatePriceDisplay();
+            } else {
+                console.warn('⚠️ No data received');
+            }
         }
     });
 }
 
 function updatePriceDisplay() {
-    const currentPrice = dataManager.getCurrentPrice();
-    const priceChange = dataManager.getPriceChange();
-    const decimals = dataManager.getDecimals(currentSymbol);
-    
-    if (currentPrice) {
-        document.getElementById('currentPrice').textContent = currentPrice.toFixed(decimals);
+    try {
+        const currentPrice = dataManager.getCurrentPrice();
+        const priceChange = dataManager.getPriceChange();
+        const decimals = dataManager.getDecimals(currentSymbol);
         
-        const changeEl = document.getElementById('priceChange');
-        const sign = priceChange.change >= 0 ? '+' : '';
-        changeEl.textContent = `${sign}${priceChange.change.toFixed(decimals)} (${priceChange.percent.toFixed(2)}%)`;
-        changeEl.className = priceChange.change >= 0 ? 'price-change' : 'price-change negative';
-        document.getElementById('currentPrice').style.color = priceChange.change >= 0 ? '#4caf50' : '#f44336';
+        if (currentPrice) {
+            const priceEl = document.getElementById('currentPrice');
+            if (priceEl) {
+                priceEl.textContent = currentPrice.toFixed(decimals);
+                priceEl.style.color = priceChange.change >= 0 ? '#4caf50' : '#f44336';
+            }
+            
+            const changeEl = document.getElementById('priceChange');
+            if (changeEl) {
+                const sign = priceChange.change >= 0 ? '+' : '';
+                changeEl.textContent = `${sign}${priceChange.change.toFixed(decimals)} (${priceChange.percent.toFixed(2)}%)`;
+                changeEl.className = priceChange.change >= 0 ? 'price-change' : 'price-change negative';
+            }
+        }
+    } catch (error) {
+        console.error('❌ Error updating price:', error);
     }
 }
 
 function changeSymbol() {
     const select = document.getElementById('symbolSelect');
     currentSymbol = select.value;
+    
+    console.log(`🔄 Changing to ${currentSymbol}`);
+    
+    // Unsubscribe from old symbol
     dataManager.unsubscribe();
-    document.getElementById('loading').classList.remove('hidden');
+    
+    // Show loading
+    const loading = document.getElementById('loading');
+    if (loading) loading.classList.remove('hidden');
+    
+    // Load new symbol
     loadChartData();
-    showNotification(`Switched to ${currentSymbol}`);
+    
+    showNotification(`✅ Switched to ${currentSymbol}`);
 }
 
 function selectTimeframe(timeframe) {
     currentTimeframe = timeframe;
     
+    console.log(`🔄 Changing to ${dataManager.getTimeframeName(timeframe)}`);
+    
+    // Update active state
     document.querySelectorAll('.tf-item').forEach(item => {
         item.classList.remove('active');
         if (parseInt(item.dataset.tf) === timeframe) {
@@ -72,18 +128,29 @@ function selectTimeframe(timeframe) {
         }
     });
     
-    document.getElementById('timeframeRing').classList.remove('show');
+    // Hide ring
+    const ring = document.getElementById('timeframeRing');
+    if (ring) ring.classList.remove('show');
+    
+    // Reload data
     dataManager.unsubscribe();
-    document.getElementById('loading').classList.remove('hidden');
+    
+    const loading = document.getElementById('loading');
+    if (loading) loading.classList.remove('hidden');
+    
     loadChartData();
-    showNotification(`Changed to ${dataManager.getTimeframeName(timeframe)}`);
+    
+    showNotification(`✅ ${dataManager.getTimeframeName(timeframe)}`);
 }
 
 function navigate(page) {
     document.querySelectorAll('.nav-item').forEach(item => {
         item.classList.remove('active');
     });
-    event.currentTarget.classList.add('active');
+    
+    if (event && event.currentTarget) {
+        event.currentTarget.classList.add('active');
+    }
     
     if (page === 'signals') {
         window.location.href = 'signals.html';
@@ -115,11 +182,145 @@ function resetView() {
 
 function showNotification(message) {
     const notification = document.getElementById('notification');
+    if (!notification) return;
+    
     notification.textContent = message;
     notification.classList.add('show');
     setTimeout(() => notification.classList.remove('show'), 2000);
 }
 
+/**
+ * Generate trading signal
+ */
+async function generateSignal() {
+    const btn = document.getElementById('generateBtn');
+    if (btn) btn.classList.add('loading');
+    
+    showNotification('🔍 Analyzing market...');
+    
+    try {
+        const candles = dataManager.getChartData();
+        
+        if (!candles || candles.length < 100) {
+            showNotification('⚠️ Not enough data');
+            if (btn) btn.classList.remove('loading');
+            return;
+        }
+        
+        // Run SMC analysis
+        const signal = smcAnalyzer.analyze(candles, currentSymbol, currentTimeframe);
+        
+        if (signal) {
+            // Save to Firebase
+            await signalTracker.saveSignal(signal);
+            
+            // Show notification with vibration
+            showSignalNotification(signal);
+            
+            showNotification(`✅ ${signal.action} signal! (${signal.confidence}%)`);
+        } else {
+            showNotification('⚠️ No valid signal found');
+        }
+    } catch (error) {
+        console.error('❌ Signal generation error:', error);
+        showNotification('❌ Generation failed');
+    }
+    
+    if (btn) btn.classList.remove('loading');
+}
+
+/**
+ * Show signal notification with vibration and sound
+ */
+function showSignalNotification(signal) {
+    // Vibrate if supported
+    if ('vibrate' in navigator) {
+        navigator.vibrate([200, 100, 200, 100, 200, 100, 400]);
+    }
+    
+    // Play notification sound
+    playNotificationSound();
+    
+    // Show rich notification
+    if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('🎯 New Trading Signal!', {
+            body: `${signal.action} ${signal.symbol} at ${signal.entry}\nConfidence: ${signal.confidence}%`,
+            requireInteraction: true
+        });
+    }
+}
+
+/**
+ * Play notification sound
+ */
+function playNotificationSound() {
+    try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = 800;
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.5);
+    } catch (error) {
+        console.log('🔇 Sound not available');
+    }
+}
+
+/**
+ * Auto-generate signals
+ */
+let autoGenerateInterval = null;
+
+function startAutoGenerate() {
+    if (autoGenerateInterval) return;
+    
+    console.log('🤖 Auto-generate started');
+    showNotification('🤖 Auto-generate ON');
+    
+    // Generate immediately
+    generateSignal();
+    
+    // Then every 5 minutes
+    autoGenerateInterval = setInterval(() => {
+        console.log('🔄 Auto-generating...');
+        generateSignal();
+    }, 5 * 60 * 1000);
+    
+    localStorage.setItem('autoGenerate', 'true');
+}
+
+function stopAutoGenerate() {
+    if (autoGenerateInterval) {
+        clearInterval(autoGenerateInterval);
+        autoGenerateInterval = null;
+    }
+    
+    console.log('🛑 Auto-generate stopped');
+    showNotification('🛑 Auto-generate OFF');
+    localStorage.setItem('autoGenerate', 'false');
+}
+
+/**
+ * Request notification permission
+ */
+if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+}
+
+/**
+ * Cleanup on page unload
+ */
 window.addEventListener('beforeunload', () => {
-    dataManager.disconnect();
+    if (dataManager) {
+        dataManager.disconnect();
+    }
 });

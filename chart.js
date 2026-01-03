@@ -5,15 +5,25 @@
 class ChartRenderer {
     constructor(canvasId) {
         this.canvas = document.getElementById(canvasId);
+        if (!this.canvas) {
+            console.error('❌ Canvas not found:', canvasId);
+            return;
+        }
+        
         this.ctx = this.canvas.getContext('2d');
         this.chartData = [];
-        this.zoom = 80;
+        this.zoom = 80;          // Default zoom
+        this.minZoom = 10;       // Minimum zoom (smallest candles)
+        this.maxZoom = 200;      // Maximum zoom (biggest candles)
         this.offset = 0;
         this.autoScroll = true;
+        
+        // Interaction
         this.isDragging = false;
         this.dragStart = 0;
         this.dragStartOffset = 0;
         this.lastTouchTime = 0;
+        
         this.init();
     }
 
@@ -26,16 +36,17 @@ class ChartRenderer {
     resize() {
         const dpr = window.devicePixelRatio || 1;
         const rect = this.canvas.getBoundingClientRect();
+        
         this.canvas.width = rect.width * dpr;
         this.canvas.height = rect.height * dpr;
         this.canvas.style.width = rect.width + 'px';
         this.canvas.style.height = rect.height + 'px';
+        
         this.ctx.scale(dpr, dpr);
         this.draw();
     }
 
     setupInteraction() {
-        let touchTimeout;
         let lastPinchDistance = 0;
         let isPinching = false;
         
@@ -78,7 +89,7 @@ class ChartRenderer {
                 const delta = distance - lastPinchDistance;
                 
                 // Adjust zoom based on pinch
-                this.zoom = Math.max(20, Math.min(200, this.zoom + delta * 0.5));
+                this.zoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.zoom + delta * 0.5));
                 lastPinchDistance = distance;
                 this.draw();
                 e.preventDefault();
@@ -110,7 +121,7 @@ class ChartRenderer {
         this.canvas.addEventListener('wheel', (e) => {
             e.preventDefault();
             const delta = e.deltaY > 0 ? -5 : 5;
-            this.zoom = Math.max(20, Math.min(200, this.zoom + delta));
+            this.zoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.zoom + delta));
             this.draw();
         }, { passive: false });
     }
@@ -123,17 +134,33 @@ class ChartRenderer {
 
     showTimeframeRing() {
         const ring = document.getElementById('timeframeRing');
-        ring.classList.add('show');
-        setTimeout(() => ring.classList.remove('show'), 3000);
+        if (ring) {
+            ring.classList.add('show');
+            
+            // Hide after 3 seconds
+            setTimeout(() => {
+                ring.classList.remove('show');
+            }, 3000);
+        }
     }
 
     setData(data) {
+        if (!data || data.length === 0) {
+            console.warn('⚠️ No data to display');
+            return;
+        }
+        
         this.chartData = data;
-        if (this.autoScroll) this.offset = 0;
+        if (this.autoScroll) {
+            this.offset = 0;
+        }
+        console.log(`📊 Chart data set: ${data.length} candles`);
         this.draw();
     }
 
     updateLastCandle(candle) {
+        if (!candle) return;
+        
         if (this.chartData.length > 0) {
             // Replace the last candle with updated one
             this.chartData[this.chartData.length - 1] = candle;
@@ -151,14 +178,25 @@ class ChartRenderer {
     }
 
     draw() {
+        if (!this.ctx) return;
+        
         const width = this.canvas.parentElement.clientWidth;
         const height = this.canvas.parentElement.clientHeight;
         
+        // Clear canvas
         this.ctx.fillStyle = '#0a0a0a';
         this.ctx.fillRect(0, 0, width, height);
         
-        if (this.chartData.length === 0) return;
+        if (this.chartData.length === 0) {
+            // Draw "No data" message
+            this.ctx.fillStyle = '#666';
+            this.ctx.font = '14px sans-serif';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText('No data available', width / 2, height / 2);
+            return;
+        }
         
+        // Calculate visible candles
         const candleWidth = this.zoom / 2;
         const maxVisible = Math.floor(width / candleWidth) + 1;
         const start = Math.max(0, this.chartData.length - maxVisible - this.offset);
@@ -167,13 +205,22 @@ class ChartRenderer {
         
         if (visible.length === 0) return;
         
+        // Calculate price range
         let minPrice = Math.min(...visible.map(c => c.low));
         let maxPrice = Math.max(...visible.map(c => c.high));
         const padding = (maxPrice - minPrice) * 0.05;
         minPrice -= padding;
         maxPrice += padding;
         
+        // Avoid division by zero
+        if (maxPrice === minPrice) {
+            maxPrice = minPrice + 1;
+        }
+        
+        // Draw grid
         this.drawGrid(width, height, minPrice, maxPrice);
+        
+        // Draw candles
         this.drawCandles(visible, width, height, minPrice, maxPrice, candleWidth);
     }
 
@@ -181,6 +228,7 @@ class ChartRenderer {
         this.ctx.strokeStyle = '#1a1a1a';
         this.ctx.lineWidth = 1;
         
+        // Horizontal lines
         for (let i = 0; i <= 5; i++) {
             const y = (height / 5) * i;
             this.ctx.beginPath();
@@ -188,6 +236,7 @@ class ChartRenderer {
             this.ctx.lineTo(width, y);
             this.ctx.stroke();
             
+            // Price labels
             const price = maxPrice - (maxPrice - minPrice) * (i / 5);
             this.ctx.fillStyle = '#666';
             this.ctx.font = '10px monospace';
@@ -198,10 +247,11 @@ class ChartRenderer {
 
     drawCandles(visible, width, height, minPrice, maxPrice, candleWidth) {
         const bodyWidth = Math.max(1, candleWidth * 0.7);
+        const priceRange = maxPrice - minPrice;
         
         visible.forEach((candle, index) => {
             const x = width - (visible.length - index) * candleWidth;
-            const priceToY = (price) => height - ((price - minPrice) / (maxPrice - minPrice)) * height;
+            const priceToY = (price) => height - ((price - minPrice) / priceRange) * height;
             
             const openY = priceToY(candle.open);
             const closeY = priceToY(candle.close);
@@ -209,17 +259,20 @@ class ChartRenderer {
             const lowY = priceToY(candle.low);
             const isBullish = candle.close >= candle.open;
             
+            // Colors
             const color = isBullish ? '#4caf50' : '#f44336';
             this.ctx.strokeStyle = color;
             this.ctx.fillStyle = color;
             
+            // Draw wick
             this.ctx.beginPath();
             this.ctx.moveTo(x + candleWidth / 2, highY);
             this.ctx.lineTo(x + candleWidth / 2, lowY);
             this.ctx.stroke();
             
+            // Draw body
             const bodyY = Math.min(openY, closeY);
-            const bodyHeight = Math.abs(closeY - openY) || 1;
+            const bodyHeight = Math.max(1, Math.abs(closeY - openY));
             this.ctx.fillRect(x + (candleWidth - bodyWidth) / 2, bodyY, bodyWidth, bodyHeight);
         });
     }
@@ -229,12 +282,12 @@ class ChartRenderer {
     }
     
     zoomIn() {
-        this.zoom = Math.min(200, this.zoom + 15);
+        this.zoom = Math.min(this.maxZoom, this.zoom + 15);
         this.draw();
     }
     
     zoomOut() {
-        this.zoom = Math.max(20, this.zoom - 15);
+        this.zoom = Math.max(this.minZoom, this.zoom - 15);
         this.draw();
     }
     
