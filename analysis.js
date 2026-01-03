@@ -401,9 +401,9 @@ class SMCAnalyzer {
     }
 
     /**
-     * SIGNAL GENERATION - Combine all concepts
+     * SIGNAL GENERATION - Combine all concepts + NEWS
      */
-    generateSignal(symbol, timeframe) {
+    async generateSignal(symbol, timeframe) {
         const current = this.candles[this.candles.length - 1];
         const structure = this.analysis.marketStructure;
         const pd = this.analysis.premiumDiscount;
@@ -411,6 +411,11 @@ class SMCAnalyzer {
         if (!structure || !pd) {
             return null;
         }
+        
+        // Get news analysis
+        console.log('📰 Fetching news analysis...');
+        const newsAnalysis = await newsAnalyzer.analyzeCurrency(symbol);
+        console.log(`📊 News: ${newsAnalysis.direction} (${newsAnalysis.sentiment})`);
         
         // Determine bias
         let bias = structure.trend;
@@ -474,8 +479,24 @@ class SMCAnalyzer {
                 reasons.push('Wyckoff accumulation phase detected');
             }
             
+            // 7. NEWS ANALYSIS - BULLISH
+            if (newsAnalysis.direction === 'BULLISH') {
+                confidence += 15;
+                reasons.push(`📰 Bullish news sentiment: ${newsAnalysis.sentiment}/100 (${newsAnalysis.articles} articles)`);
+            } else if (newsAnalysis.direction === 'BEARISH') {
+                confidence -= 20;
+                reasons.push(`⚠️ News contradicts: Bearish sentiment ${newsAnalysis.sentiment}/100`);
+            } else if (newsAnalysis.articles > 0) {
+                reasons.push(`📰 Neutral news: ${newsAnalysis.articles} articles analyzed`);
+            }
+            
+            // 8. HIGH VOLATILITY WARNING
+            if (newsAnalysis.volatility > 60) {
+                reasons.push(`⚡ HIGH VOLATILITY expected: ${newsAnalysis.volatility}/100 - Wider stops recommended`);
+            }
+            
             if (confidence >= 65) {
-                return this.createBuySignal(symbol, timeframe, current, confidence, reasons);
+                return this.createBuySignal(symbol, timeframe, current, confidence, reasons, newsAnalysis);
             }
         }
         
@@ -539,8 +560,24 @@ class SMCAnalyzer {
                 reasons.push('Wyckoff distribution phase detected');
             }
             
+            // 7. NEWS ANALYSIS - BEARISH
+            if (newsAnalysis.direction === 'BEARISH') {
+                confidence += 15;
+                reasons.push(`📰 Bearish news sentiment: ${newsAnalysis.sentiment}/100 (${newsAnalysis.articles} articles)`);
+            } else if (newsAnalysis.direction === 'BULLISH') {
+                confidence -= 20;
+                reasons.push(`⚠️ News contradicts: Bullish sentiment ${newsAnalysis.sentiment}/100`);
+            } else if (newsAnalysis.articles > 0) {
+                reasons.push(`📰 Neutral news: ${newsAnalysis.articles} articles analyzed`);
+            }
+            
+            // 8. HIGH VOLATILITY WARNING
+            if (newsAnalysis.volatility > 60) {
+                reasons.push(`⚡ HIGH VOLATILITY expected: ${newsAnalysis.volatility}/100 - Wider stops recommended`);
+            }
+            
             if (confidence >= 65) {
-                return this.createSellSignal(symbol, timeframe, current, confidence, reasons);
+                return this.createSellSignal(symbol, timeframe, current, confidence, reasons, newsAnalysis);
             }
         }
         
@@ -548,9 +585,9 @@ class SMCAnalyzer {
     }
 
     /**
-     * Create BUY signal with proper risk management
+     * Create BUY signal with proper risk management + NEWS
      */
-    createBuySignal(symbol, timeframe, current, confidence, reasons) {
+    createBuySignal(symbol, timeframe, current, confidence, reasons, newsAnalysis) {
         const entry = current.close;
         
         // Find optimal entry using OTE (61.8-78.6% retracement)
@@ -560,13 +597,25 @@ class SMCAnalyzer {
         // Stop Loss: Below recent swing low or order block
         const swings = this.analysis.marketStructure.swings.filter(s => s.type === 'low');
         const recentLow = swings.length > 0 ? Math.min(...swings.slice(-3).map(s => s.price)) : entry * 0.98;
-        const sl = recentLow * 0.998; // 0.2% below swing low
+        let sl = recentLow * 0.998; // 0.2% below swing low
+        
+        // Adjust for volatility
+        if (newsAnalysis && newsAnalysis.volatility > 60) {
+            sl = sl * 0.98; // Wider SL for high volatility
+        }
         
         // Take Profits: Based on risk-reward and resistance levels
         const riskAmount = entry - sl;
-        const tp1 = entry + (riskAmount * 1.5);  // 1.5R
-        const tp2 = entry + (riskAmount * 2.5);  // 2.5R
-        const tp3 = entry + (riskAmount * 4.0);  // 4R
+        let tp1 = entry + (riskAmount * 1.5);  // 1.5R
+        let tp2 = entry + (riskAmount * 2.5);  // 2.5R
+        let tp3 = entry + (riskAmount * 4.0);  // 4R
+        
+        // Adjust targets for high volatility
+        if (newsAnalysis && newsAnalysis.volatility > 60) {
+            tp1 = entry + (riskAmount * 2.0);  // 2R
+            tp2 = entry + (riskAmount * 3.0);  // 3R
+            tp3 = entry + (riskAmount * 5.0);  // 5R
+        }
         
         return {
             symbol,
@@ -582,16 +631,17 @@ class SMCAnalyzer {
             confidence: Math.min(95, confidence),
             riskReward: 2.5,
             reasons: reasons,
+            newsAnalysis: newsAnalysis || null,
             timestamp: Date.now(),
             status: 'active',
-            concepts: ['SMC', 'ICT', 'CTR', 'Wyckoff']
+            concepts: ['SMC', 'ICT', 'CTR', 'Wyckoff', 'News Sentiment']
         };
     }
 
     /**
-     * Create SELL signal with proper risk management
+     * Create SELL signal with proper risk management + NEWS
      */
-    createSellSignal(symbol, timeframe, current, confidence, reasons) {
+    createSellSignal(symbol, timeframe, current, confidence, reasons, newsAnalysis) {
         const entry = current.close;
         
         // Find optimal entry using OTE
@@ -601,13 +651,25 @@ class SMCAnalyzer {
         // Stop Loss: Above recent swing high or order block
         const swings = this.analysis.marketStructure.swings.filter(s => s.type === 'high');
         const recentHigh = swings.length > 0 ? Math.max(...swings.slice(-3).map(s => s.price)) : entry * 1.02;
-        const sl = recentHigh * 1.002; // 0.2% above swing high
+        let sl = recentHigh * 1.002; // 0.2% above swing high
+        
+        // Adjust for volatility
+        if (newsAnalysis && newsAnalysis.volatility > 60) {
+            sl = sl * 1.02; // Wider SL for high volatility
+        }
         
         // Take Profits: Based on risk-reward and support levels
         const riskAmount = sl - entry;
-        const tp1 = entry - (riskAmount * 1.5);  // 1.5R
-        const tp2 = entry - (riskAmount * 2.5);  // 2.5R
-        const tp3 = entry - (riskAmount * 4.0);  // 4R
+        let tp1 = entry - (riskAmount * 1.5);  // 1.5R
+        let tp2 = entry - (riskAmount * 2.5);  // 2.5R
+        let tp3 = entry - (riskAmount * 4.0);  // 4R
+        
+        // Adjust targets for high volatility
+        if (newsAnalysis && newsAnalysis.volatility > 60) {
+            tp1 = entry - (riskAmount * 2.0);  // 2R
+            tp2 = entry - (riskAmount * 3.0);  // 3R
+            tp3 = entry - (riskAmount * 5.0);  // 5R
+        }
         
         return {
             symbol,
@@ -623,9 +685,10 @@ class SMCAnalyzer {
             confidence: Math.min(95, confidence),
             riskReward: 2.5,
             reasons: reasons,
+            newsAnalysis: newsAnalysis || null,
             timestamp: Date.now(),
             status: 'active',
-            concepts: ['SMC', 'ICT', 'CTR', 'Wyckoff']
+            concepts: ['SMC', 'ICT', 'CTR', 'Wyckoff', 'News Sentiment']
         };
     }
 

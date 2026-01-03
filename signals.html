@@ -224,6 +224,55 @@
             color: #888;
         }
         
+        .signal-news {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(33, 150, 243, 0.1);
+            border-radius: 6px;
+            border-left: 3px solid #2196f3;
+        }
+        
+        .news-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: #2196f3;
+            margin-bottom: 8px;
+        }
+        
+        .news-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            font-size: 10px;
+        }
+        
+        .news-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+        }
+        
+        .news-label {
+            color: #888;
+        }
+        
+        .news-value {
+            font-weight: 600;
+            color: #fff;
+        }
+        
+        .news-value.positive {
+            color: #4caf50;
+        }
+        
+        .news-value.negative {
+            color: #f44336;
+        }
+        
+        .news-value.neutral {
+            color: #ffc107;
+        }
+        
         .empty-state {
             text-align: center;
             padding: 60px 20px;
@@ -401,6 +450,32 @@
                     <div class="signal-reasons">
                         ${signal.reasons.map(r => `• ${r}`).join('<br>')}
                     </div>
+                    
+                    ${signal.newsAnalysis ? `
+                    <div class="signal-news">
+                        <div class="news-title">📰 News Analysis:</div>
+                        <div class="news-grid">
+                            <div class="news-item">
+                                <span class="news-label">Sentiment:</span>
+                                <span class="news-value ${signal.newsAnalysis.sentiment > 0 ? 'positive' : signal.newsAnalysis.sentiment < 0 ? 'negative' : 'neutral'}">
+                                    ${signal.newsAnalysis.sentiment > 0 ? '+' : ''}${signal.newsAnalysis.sentiment}
+                                </span>
+                            </div>
+                            <div class="news-item">
+                                <span class="news-label">Volatility:</span>
+                                <span class="news-value">${signal.newsAnalysis.volatility}/100</span>
+                            </div>
+                            <div class="news-item">
+                                <span class="news-label">Direction:</span>
+                                <span class="news-value">${signal.newsAnalysis.direction}</span>
+                            </div>
+                            <div class="news-item">
+                                <span class="news-label">Articles:</span>
+                                <span class="news-value">${signal.newsAnalysis.articles}</span>
+                            </div>
+                        </div>
+                    </div>
+                    ` : ''}
                     
                     <div style="font-size: 10px; color: #666; margin-top: 8px;">
                         ${new Date(signal.timestamp).toLocaleString()}
