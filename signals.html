@@ -273,6 +273,53 @@
             color: #ffc107;
         }
         
+        .confidence-breakdown {
+            margin-top: 12px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 6px;
+        }
+        
+        .conf-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .conf-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .conf-label {
+            font-size: 10px;
+            min-width: 80px;
+            color: #888;
+        }
+        
+        .conf-bar-container {
+            flex: 1;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .conf-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4caf50, #2196f3);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+        
+        .conf-percent {
+            font-size: 10px;
+            min-width: 35px;
+            text-align: right;
+            font-weight: 600;
+            color: #fff;
+        }
+        
         .empty-state {
             text-align: center;
             padding: 60px 20px;
@@ -414,7 +461,7 @@
                            onchange="toggleSelection('${signal.id}')">
                     
                     <div class="signal-header">
-                        <div class="signal-symbol">${signal.symbol} ${signal.timeframe}</div>
+                        <div class="signal-symbol">${signal.symbol} ${signal.timeframeName || signal.timeframe}</div>
                         <div class="signal-action ${signal.action.toLowerCase()}">${signal.action}</div>
                     </div>
                     
@@ -429,19 +476,43 @@
                         </div>
                         <div class="signal-info-item">
                             <span class="signal-info-label">TP1:</span>
-                            <span class="signal-info-value">${signal.tp1.toFixed(5)}</span>
+                            <span class="signal-info-value">${signal.tp1.toFixed(5)} (${signal.tp1Pips || 10}p)</span>
                         </div>
                         <div class="signal-info-item">
                             <span class="signal-info-label">TP2:</span>
-                            <span class="signal-info-value">${signal.tp2.toFixed(5)}</span>
+                            <span class="signal-info-value">${signal.tp2.toFixed(5)} (${signal.tp2Pips || 20}p)</span>
                         </div>
                         <div class="signal-info-item">
                             <span class="signal-info-label">TP3:</span>
-                            <span class="signal-info-value">${signal.tp3.toFixed(5)}</span>
+                            <span class="signal-info-value">${signal.tp3.toFixed(5)} (${signal.tp3Pips || 30}p)</span>
                         </div>
                         <div class="signal-info-item">
-                            <span class="signal-info-label">Confidence:</span>
+                            <span class="signal-info-label">Overall:</span>
                             <span class="signal-info-value">${signal.confidence}%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="confidence-breakdown">
+                        <div class="conf-row">
+                            <span class="conf-label">📊 Technical:</span>
+                            <div class="conf-bar-container">
+                                <div class="conf-bar" style="width: ${signal.technicalConfidence || 0}%"></div>
+                            </div>
+                            <span class="conf-percent">${signal.technicalConfidence || 0}%</span>
+                        </div>
+                        <div class="conf-row">
+                            <span class="conf-label">🎯 SMC:</span>
+                            <div class="conf-bar-container">
+                                <div class="conf-bar" style="width: ${signal.smcConfidence || 0}%"></div>
+                            </div>
+                            <span class="conf-percent">${signal.smcConfidence || 0}%</span>
+                        </div>
+                        <div class="conf-row">
+                            <span class="conf-label">📰 Sentiment:</span>
+                            <div class="conf-bar-container">
+                                <div class="conf-bar" style="width: ${signal.sentimentConfidence || 0}%"></div>
+                            </div>
+                            <span class="conf-percent">${signal.sentimentConfidence || 0}%</span>
                         </div>
                     </div>
                     

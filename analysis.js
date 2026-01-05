@@ -634,7 +634,7 @@ class SMCAnalyzer {
     }
 
     /**
-     * SIGNAL GENERATION - Combines all 3 methods
+     * SIGNAL GENERATION - ALWAYS generate signal
      */
     async generateSignal(symbol, timeframe) {
         const current = this.candles[this.candles.length - 1];
@@ -645,15 +645,27 @@ class SMCAnalyzer {
         
         // Get news sentiment
         let newsAnalysis = null;
+        let newsConfidence = 0;
         try {
             newsAnalysis = await newsAnalyzer.analyzeCurrency(symbol);
             console.log(`📰 News: ${newsAnalysis.direction} (${newsAnalysis.sentiment})`);
+            
+            // Calculate news confidence
+            if (newsAnalysis.direction === 'BULLISH') {
+                newsConfidence = Math.min(100, Math.abs(newsAnalysis.sentiment));
+            } else if (newsAnalysis.direction === 'BEARISH') {
+                newsConfidence = Math.min(100, Math.abs(newsAnalysis.sentiment));
+            } else {
+                newsConfidence = 50;
+            }
         } catch (error) {
             console.warn('⚠️ News unavailable');
+            newsConfidence = 0;
         }
         
         let bias = structure.trend;
-        let confidence = 0;
+        let technicalConfidence = 0;
+        let smcConfidence = 0;
         let reasons = [];
         
         const analysisData = {
@@ -671,124 +683,123 @@ class SMCAnalyzer {
             premiumDiscount: pd.currentZone
         };
         
-        // BULLISH SIGNAL - Combine all methods
+        // BULLISH SIGNAL - ALWAYS generate
         if (bias === 'bullish') {
-            // Premium/Discount
+            // TECHNICAL ANALYSIS (Trendlines + S/R)
             if (pd.currentZone === 'discount') {
-                confidence += 20;
+                technicalConfidence += 30;
                 reasons.push('✅ Discount zone');
             }
             
-            // Trendlines
             const supportLine = this.analysis.trendlines.find(t => t.type === 'support');
             if (supportLine) {
-                confidence += 15;
+                technicalConfidence += 35;
                 reasons.push(`✅ Support trendline (${supportLine.touches}x)`);
             }
             
-            // Channels
             const upChannel = this.analysis.channels.find(c => c.type === 'upward');
             if (upChannel) {
-                confidence += 10;
+                technicalConfidence += 20;
                 reasons.push('✅ Upward channel');
             }
             
-            // S/R
             const support = this.analysis.supportResistance.find(sr => sr.type === 'support');
             if (support) {
-                confidence += 10;
+                technicalConfidence += 15;
                 reasons.push(`✅ Support ${support.price.toFixed(2)} (${support.touches}x)`);
             }
             
-            // SMC: Order Blocks
+            // SMC ANALYSIS
             const bullishOB = this.analysis.orderBlocks.find(ob => 
                 ob.type === 'bullish' && 
                 current.close >= ob.bottom && 
                 current.close <= ob.top * 1.02
             );
             if (bullishOB) {
-                confidence += 10;
+                smcConfidence += 20;
                 reasons.push('✅ Bullish order block');
             }
             
-            // SMC: FVG
             const bullishFVG = this.analysis.fvgs.find(fvg => 
                 fvg.type === 'bullish' && !fvg.filled
             );
             if (bullishFVG) {
-                confidence += 10;
+                smcConfidence += 20;
                 reasons.push('✅ Bullish FVG');
             }
             
-            // SMC: Liquidity
             if (this.analysis.liquidityZones.some(lz => lz.type === 'sell-side' && lz.swept)) {
-                confidence += 10;
+                smcConfidence += 20;
                 reasons.push('✅ Liquidity swept');
             }
             
-            // SMC: CHoCH
             if (this.analysis.chochs.some(ch => ch.type === 'bullish')) {
-                confidence += 5;
+                smcConfidence += 15;
                 reasons.push('✅ Bullish CHoCH');
             }
             
-            // Wyckoff
             if (this.analysis.wyckoff?.phase === 'accumulation') {
-                confidence += 10;
+                smcConfidence += 25;
                 reasons.push('✅ Wyckoff accumulation');
             }
             
             // NEWS SENTIMENT
             if (newsAnalysis) {
                 if (newsAnalysis.direction === 'BULLISH') {
-                    confidence += 15;
                     reasons.push(`📰 Bullish news: +${newsAnalysis.sentiment}/100`);
                 } else if (newsAnalysis.direction === 'BEARISH') {
-                    confidence -= 15;
                     reasons.push(`⚠️ Bearish news: ${newsAnalysis.sentiment}/100`);
+                } else {
+                    reasons.push(`📰 Neutral news`);
                 }
             }
             
-            if (confidence >= 65) {
-                return this.createBuySignal(symbol, timeframe, current, confidence, reasons, newsAnalysis, analysisData);
-            }
+            // Calculate overall confidence
+            const overallConfidence = Math.round((technicalConfidence + smcConfidence + newsConfidence) / 3);
+            
+            // ALWAYS CREATE SIGNAL (no minimum requirement)
+            return this.createBuySignal(symbol, timeframe, current, overallConfidence, 
+                technicalConfidence, smcConfidence, newsConfidence, reasons, newsAnalysis, analysisData);
         }
         
-        // BEARISH SIGNAL - Combine all methods
+        // BEARISH SIGNAL - ALWAYS generate
         if (bias === 'bearish') {
-            confidence = 0;
+            technicalConfidence = 0;
+            smcConfidence = 0;
             reasons = [];
             
+            // TECHNICAL ANALYSIS
             if (pd.currentZone === 'premium') {
-                confidence += 20;
+                technicalConfidence += 30;
                 reasons.push('✅ Premium zone');
             }
             
             const resistanceLine = this.analysis.trendlines.find(t => t.type === 'resistance');
             if (resistanceLine) {
-                confidence += 15;
+                technicalConfidence += 35;
                 reasons.push(`✅ Resistance trendline (${resistanceLine.touches}x)`);
             }
             
             const downChannel = this.analysis.channels.find(c => c.type === 'downward');
             if (downChannel) {
-                confidence += 10;
+                technicalConfidence += 20;
                 reasons.push('✅ Downward channel');
             }
             
             const resistance = this.analysis.supportResistance.find(sr => sr.type === 'resistance');
             if (resistance) {
-                confidence += 10;
+                technicalConfidence += 15;
                 reasons.push(`✅ Resistance ${resistance.price.toFixed(2)} (${resistance.touches}x)`);
             }
             
+            // SMC ANALYSIS
             const bearishOB = this.analysis.orderBlocks.find(ob => 
                 ob.type === 'bearish' && 
                 current.close <= ob.top && 
                 current.close >= ob.bottom * 0.98
             );
             if (bearishOB) {
-                confidence += 10;
+                smcConfidence += 20;
                 reasons.push('✅ Bearish order block');
             }
             
@@ -796,57 +807,68 @@ class SMCAnalyzer {
                 fvg.type === 'bearish' && !fvg.filled
             );
             if (bearishFVG) {
-                confidence += 10;
+                smcConfidence += 20;
                 reasons.push('✅ Bearish FVG');
             }
             
             if (this.analysis.liquidityZones.some(lz => lz.type === 'buy-side' && lz.swept)) {
-                confidence += 10;
+                smcConfidence += 20;
                 reasons.push('✅ Liquidity swept');
             }
             
             if (this.analysis.chochs.some(ch => ch.type === 'bearish')) {
-                confidence += 5;
+                smcConfidence += 15;
                 reasons.push('✅ Bearish CHoCH');
             }
             
             if (this.analysis.wyckoff?.phase === 'distribution') {
-                confidence += 10;
+                smcConfidence += 25;
                 reasons.push('✅ Wyckoff distribution');
             }
             
+            // NEWS SENTIMENT
             if (newsAnalysis) {
                 if (newsAnalysis.direction === 'BEARISH') {
-                    confidence += 15;
                     reasons.push(`📰 Bearish news: ${newsAnalysis.sentiment}/100`);
                 } else if (newsAnalysis.direction === 'BULLISH') {
-                    confidence -= 15;
                     reasons.push(`⚠️ Bullish news: +${newsAnalysis.sentiment}/100`);
+                } else {
+                    reasons.push(`📰 Neutral news`);
                 }
             }
             
-            if (confidence >= 65) {
-                return this.createSellSignal(symbol, timeframe, current, confidence, reasons, newsAnalysis, analysisData);
-            }
+            // Calculate overall confidence
+            const overallConfidence = Math.round((technicalConfidence + smcConfidence + newsConfidence) / 3);
+            
+            // ALWAYS CREATE SIGNAL (no minimum requirement)
+            return this.createSellSignal(symbol, timeframe, current, overallConfidence,
+                technicalConfidence, smcConfidence, newsConfidence, reasons, newsAnalysis, analysisData);
         }
         
         return null;
     }
 
-    createBuySignal(symbol, timeframe, current, confidence, reasons, newsAnalysis, analysisData) {
+    createBuySignal(symbol, timeframe, current, overallConfidence, technicalConfidence, smcConfidence, newsConfidence, reasons, newsAnalysis, analysisData) {
         const entry = current.close;
         const pd = this.analysis.premiumDiscount;
+        
+        // Get pip value based on symbol
+        const pipValue = this.getPipValue(symbol);
+        
+        // 10, 20, 30 pips targets
+        const tp1 = entry + (10 * pipValue);  // 10 pips
+        const tp2 = entry + (20 * pipValue);  // 20 pips
+        const tp3 = entry + (30 * pipValue);  // 30 pips
+        
+        // Stop loss: 15 pips or swing low
         const swings = this.analysis.marketStructure.swings.filter(s => s.type === 'low');
         const recentLow = swings.length > 0 ? Math.min(...swings.slice(-3).map(s => s.price)) : entry * 0.98;
-        
-        let sl = recentLow * 0.995;
-        const riskAmount = entry - sl;
-        let tp1 = entry + (riskAmount * 1.5);
-        let tp2 = entry + (riskAmount * 2.5);
-        let tp3 = entry + (riskAmount * 4.0);
+        let sl = Math.min(entry - (15 * pipValue), recentLow * 0.995);
         
         return {
-            symbol, timeframe,
+            symbol,
+            timeframe,
+            timeframeName: this.getTimeframeName(timeframe),
             action: 'BUY',
             bias: 'bullish',
             entry: parseFloat(entry.toFixed(5)),
@@ -855,8 +877,14 @@ class SMCAnalyzer {
             tp1: parseFloat(tp1.toFixed(5)),
             tp2: parseFloat(tp2.toFixed(5)),
             tp3: parseFloat(tp3.toFixed(5)),
-            confidence: Math.min(95, confidence),
-            riskReward: 2.5,
+            tp1Pips: 10,
+            tp2Pips: 20,
+            tp3Pips: 30,
+            confidence: overallConfidence,
+            technicalConfidence: Math.min(100, technicalConfidence),
+            smcConfidence: Math.min(100, smcConfidence),
+            sentimentConfidence: Math.min(100, newsConfidence),
+            riskReward: 2.0,
             reasons,
             newsAnalysis,
             analysisData,
@@ -866,20 +894,27 @@ class SMCAnalyzer {
         };
     }
 
-    createSellSignal(symbol, timeframe, current, confidence, reasons, newsAnalysis, analysisData) {
+    createSellSignal(symbol, timeframe, current, overallConfidence, technicalConfidence, smcConfidence, newsConfidence, reasons, newsAnalysis, analysisData) {
         const entry = current.close;
         const pd = this.analysis.premiumDiscount;
+        
+        // Get pip value based on symbol
+        const pipValue = this.getPipValue(symbol);
+        
+        // 10, 20, 30 pips targets
+        const tp1 = entry - (10 * pipValue);  // 10 pips
+        const tp2 = entry - (20 * pipValue);  // 20 pips
+        const tp3 = entry - (30 * pipValue);  // 30 pips
+        
+        // Stop loss: 15 pips or swing high
         const swings = this.analysis.marketStructure.swings.filter(s => s.type === 'high');
         const recentHigh = swings.length > 0 ? Math.max(...swings.slice(-3).map(s => s.price)) : entry * 1.02;
-        
-        let sl = recentHigh * 1.005;
-        const riskAmount = sl - entry;
-        let tp1 = entry - (riskAmount * 1.5);
-        let tp2 = entry - (riskAmount * 2.5);
-        let tp3 = entry - (riskAmount * 4.0);
+        let sl = Math.max(entry + (15 * pipValue), recentHigh * 1.005);
         
         return {
-            symbol, timeframe,
+            symbol,
+            timeframe,
+            timeframeName: this.getTimeframeName(timeframe),
             action: 'SELL',
             bias: 'bearish',
             entry: parseFloat(entry.toFixed(5)),
@@ -888,8 +923,14 @@ class SMCAnalyzer {
             tp1: parseFloat(tp1.toFixed(5)),
             tp2: parseFloat(tp2.toFixed(5)),
             tp3: parseFloat(tp3.toFixed(5)),
-            confidence: Math.min(95, confidence),
-            riskReward: 2.5,
+            tp1Pips: 10,
+            tp2Pips: 20,
+            tp3Pips: 30,
+            confidence: overallConfidence,
+            technicalConfidence: Math.min(100, technicalConfidence),
+            smcConfidence: Math.min(100, smcConfidence),
+            sentimentConfidence: Math.min(100, newsConfidence),
+            riskReward: 2.0,
             reasons,
             newsAnalysis,
             analysisData,
@@ -897,6 +938,35 @@ class SMCAnalyzer {
             status: 'active',
             concepts: ['Trendlines', 'SMC/ICT', 'News Sentiment']
         };
+    }
+
+    getPipValue(symbol) {
+        // Pip values for different instruments
+        const pipValues = {
+            'XAUUSD': 0.01,    // Gold: 1 pip = 0.01
+            'BTCUSD': 1.0,     // Bitcoin: 1 pip = 1.0
+            'EURUSD': 0.0001,  // EUR/USD: 1 pip = 0.0001
+            'GBPUSD': 0.0001,  // GBP/USD: 1 pip = 0.0001
+            'USDCAD': 0.0001,  // USD/CAD: 1 pip = 0.0001
+            'AUDUSD': 0.0001,  // AUD/USD: 1 pip = 0.0001
+            'AUDCAD': 0.0001,  // AUD/CAD: 1 pip = 0.0001
+            'USDJPY': 0.01     // USD/JPY: 1 pip = 0.01
+        };
+        
+        return pipValues[symbol] || 0.0001;
+    }
+
+    getTimeframeName(timeframe) {
+        const names = {
+            60: '1 Minute',
+            300: '5 Minutes',
+            900: '15 Minutes',
+            1800: '30 Minutes',
+            3600: '1 Hour',
+            14400: '4 Hours',
+            86400: '1 Day'
+        };
+        return names[timeframe] || `${timeframe}s`;
     }
 }
 

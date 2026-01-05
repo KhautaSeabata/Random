@@ -1,5 +1,5 @@
 // Service Worker for MzanziFx
-const CACHE_NAME = 'mzanzifx-v5.06'; // VERSION 5.06 - Complete 3-method analysis
+const CACHE_NAME = 'mzanzifx-v5.07'; // VERSION 5.07 - Always generate signals + confidence breakdown + pip targets
 const urlsToCache = [
   './',
   './index.html',
@@ -19,7 +19,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('✅ Cache opened - v5.06');
+        console.log('✅ Cache opened - v5.07');
         return cache.addAll(urlsToCache);
       })
   );
