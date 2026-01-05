@@ -161,6 +161,11 @@ class ChartRenderer {
         this.draw();
     }
 
+    updateSymbol(symbol) {
+        this.symbol = symbol;
+        console.log(`📊 Chart symbol updated to: ${symbol}`);
+    }
+
     updateLastCandle(candle) {
         if (!candle) return;
         
@@ -238,6 +243,69 @@ class ChartRenderer {
         
         // Draw candles on top
         this.drawCandles(visible, width, height, minPrice, maxPrice, candleWidth);
+        
+        // Draw current price line (on top of everything)
+        this.drawCurrentPriceLine(width, height, priceToY);
+    }
+
+    /**
+     * Draw current price line (horizontal blue dotted line)
+     */
+    drawCurrentPriceLine(width, height, priceToY) {
+        if (this.chartData.length === 0) return;
+        
+        const currentCandle = this.chartData[this.chartData.length - 1];
+        const currentPrice = currentCandle.close;
+        const y = priceToY(currentPrice);
+        
+        // Draw dotted line
+        this.ctx.strokeStyle = '#2196f3'; // Blue
+        this.ctx.lineWidth = 2;
+        this.ctx.setLineDash([8, 4]); // Dotted pattern
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, y);
+        this.ctx.lineTo(width, y);
+        this.ctx.stroke();
+        this.ctx.setLineDash([]); // Reset
+        
+        // Draw price label on the right
+        const decimals = this.getDecimals();
+        const priceText = currentPrice.toFixed(decimals);
+        
+        this.ctx.font = 'bold 11px -apple-system, sans-serif';
+        this.ctx.textAlign = 'right';
+        this.ctx.textBaseline = 'middle';
+        
+        // Background box
+        const metrics = this.ctx.measureText(priceText);
+        const padding = 4;
+        const boxWidth = metrics.width + padding * 2;
+        const boxHeight = 18;
+        const boxX = width - boxWidth;
+        const boxY = y - boxHeight / 2;
+        
+        this.ctx.fillStyle = '#2196f3'; // Blue background
+        this.ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+        
+        // Price text
+        this.ctx.fillStyle = '#fff';
+        this.ctx.fillText(priceText, width - padding, y);
+    }
+
+    getDecimals() {
+        // Determine decimal places based on current symbol
+        const symbol = this.symbol || 'XAUUSD';
+        const decimalMap = {
+            'XAUUSD': 2,
+            'BTCUSD': 2,
+            'USDJPY': 2,
+            'EURUSD': 4,
+            'GBPUSD': 4,
+            'USDCAD': 4,
+            'AUDUSD': 4,
+            'AUDCAD': 4
+        };
+        return decimalMap[symbol] || 4;
     }
 
     drawGrid(width, height, minPrice, maxPrice) {
@@ -389,6 +457,8 @@ class ChartRenderer {
         
         this.ctx.beginPath();
         let started = false;
+        let lastX = 0;
+        let lastY = 0;
         
         tl.points.forEach((point, i) => {
             if (point.index >= startIndex && point.index < startIndex + visibleCount) {
@@ -402,6 +472,8 @@ class ChartRenderer {
                 } else {
                     this.ctx.lineTo(x, y);
                 }
+                lastX = x;
+                lastY = y;
             }
         });
         
@@ -418,9 +490,33 @@ class ChartRenderer {
             const futureX = width;
             const futureY = priceToY(futurePrice);
             this.ctx.lineTo(futureX, futureY);
+            lastX = futureX;
+            lastY = futureY;
         }
         
         this.ctx.stroke();
+        
+        // Draw label at the end of the line
+        if (tl.label && lastX > 0) {
+            const labelText = `${tl.label} (${tl.touches}x)`;
+            this.ctx.fillStyle = color;
+            this.ctx.font = 'bold 11px -apple-system, sans-serif';
+            this.ctx.textAlign = 'left';
+            this.ctx.textBaseline = 'middle';
+            
+            // Background box
+            const metrics = this.ctx.measureText(labelText);
+            const padding = 4;
+            const boxX = Math.min(lastX + 5, width - metrics.width - padding * 2 - 5);
+            const boxY = lastY - 10;
+            
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            this.ctx.fillRect(boxX - padding, boxY - padding, metrics.width + padding * 2, 20);
+            
+            // Text
+            this.ctx.fillStyle = color;
+            this.ctx.fillText(labelText, boxX, boxY + 6);
+        }
     }
 
     /**

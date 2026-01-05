@@ -20,6 +20,7 @@ window.addEventListener('load', async () => {
     
     // Initialize chart first
     chart = new ChartRenderer('chart');
+    chart.updateSymbol(currentSymbol);
     
     try {
         // Show loading
@@ -149,6 +150,11 @@ function changeSymbol() {
     
     // Save to localStorage
     localStorage.setItem('selectedSymbol', currentSymbol);
+    
+    // Update chart symbol
+    if (chart) {
+        chart.updateSymbol(currentSymbol);
+    }
     
     console.log(`🔄 Changing to ${currentSymbol}`);
     

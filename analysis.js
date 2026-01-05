@@ -240,7 +240,8 @@ class SMCAnalyzer {
             endPoint: point2,
             touches,
             touchPoints,
-            label: type === 'support' ? 'Support Trendline' : 'Resistance Trendline'
+            points: touchPoints, // For chart drawing
+            label: type === 'support' ? 'Support' : 'Resistance'
         };
     }
 

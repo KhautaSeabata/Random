@@ -1,5 +1,5 @@
 // Service Worker for MzanziFx
-const CACHE_NAME = 'mzanzifx-v5.11'; // VERSION 5.11 - Symbol persistence + timeframe display
+const CACHE_NAME = 'mzanzifx-v5.12'; // VERSION 5.12 - Visible line labels + current price line
 const urlsToCache = [
   './',
   './index.html',
@@ -19,7 +19,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('✅ Cache opened - v5.11');
+        console.log('✅ Cache opened - v5.12');
         return cache.addAll(urlsToCache);
       })
   );
