@@ -468,23 +468,23 @@
                     <div class="signal-info">
                         <div class="signal-info-item">
                             <span class="signal-info-label">Entry:</span>
-                            <span class="signal-info-value">${signal.entry.toFixed(5)}</span>
+                            <span class="signal-info-value">${signal.entry.toFixed(signal.decimals || 4)}</span>
                         </div>
                         <div class="signal-info-item">
                             <span class="signal-info-label">SL:</span>
-                            <span class="signal-info-value">${signal.sl.toFixed(5)} (R${signal.slZAR || '?'})</span>
+                            <span class="signal-info-value">${signal.sl.toFixed(signal.decimals || 4)} (R${signal.slZAR || '?'})</span>
                         </div>
                         <div class="signal-info-item">
                             <span class="signal-info-label">TP1:</span>
-                            <span class="signal-info-value">${signal.tp1.toFixed(5)} (R${signal.tp1ZAR || '?'})</span>
+                            <span class="signal-info-value">${signal.tp1.toFixed(signal.decimals || 4)} (R${signal.tp1ZAR || '?'})</span>
                         </div>
                         <div class="signal-info-item">
                             <span class="signal-info-label">TP2:</span>
-                            <span class="signal-info-value">${signal.tp2.toFixed(5)} (R${signal.tp2ZAR || '?'})</span>
+                            <span class="signal-info-value">${signal.tp2.toFixed(signal.decimals || 4)} (R${signal.tp2ZAR || '?'})</span>
                         </div>
                         <div class="signal-info-item">
                             <span class="signal-info-label">TP3:</span>
-                            <span class="signal-info-value">${signal.tp3.toFixed(5)} (R${signal.tp3ZAR || '?'})</span>
+                            <span class="signal-info-value">${signal.tp3.toFixed(signal.decimals || 4)} (R${signal.tp3ZAR || '?'})</span>
                         </div>
                         <div class="signal-info-item">
                             <span class="signal-info-label">Overall:</span>

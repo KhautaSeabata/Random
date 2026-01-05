@@ -855,6 +855,7 @@ class SMCAnalyzer {
         // Get pip value and profit per pip for ZAR calculation
         const pipValue = this.getPipValue(symbol);
         const zarPerPip = this.getZARPerPip(symbol);
+        const decimals = this.getDecimals(symbol);
         
         // Calculate pips needed for ZAR targets (at 0.01 lot)
         // TP1: ZAR 18-25 (use ZAR 20)
@@ -889,12 +890,12 @@ class SMCAnalyzer {
             timeframeName: this.getTimeframeName(timeframe),
             action: 'BUY',
             bias: 'bullish',
-            entry: parseFloat(entry.toFixed(5)),
-            optimalEntry: parseFloat(pd.levels.ote_low.toFixed(5)),
-            sl: parseFloat(sl.toFixed(5)),
-            tp1: parseFloat(tp1.toFixed(5)),
-            tp2: parseFloat(tp2.toFixed(5)),
-            tp3: parseFloat(tp3.toFixed(5)),
+            entry: parseFloat(entry.toFixed(decimals)),
+            optimalEntry: parseFloat(pd.levels.ote_low.toFixed(decimals)),
+            sl: parseFloat(sl.toFixed(decimals)),
+            tp1: parseFloat(tp1.toFixed(decimals)),
+            tp2: parseFloat(tp2.toFixed(decimals)),
+            tp3: parseFloat(tp3.toFixed(decimals)),
             tp1Pips: tp1Pips,
             tp2Pips: tp2Pips,
             tp3Pips: tp3Pips,
@@ -903,6 +904,7 @@ class SMCAnalyzer {
             tp2ZAR: tp2ZAR,
             tp3ZAR: tp3ZAR,
             slZAR: slZAR,
+            decimals: decimals,
             confidence: overallConfidence,
             technicalConfidence: Math.min(100, technicalConfidence),
             smcConfidence: Math.min(100, smcConfidence),
@@ -924,6 +926,7 @@ class SMCAnalyzer {
         // Get pip value and profit per pip for ZAR calculation
         const pipValue = this.getPipValue(symbol);
         const zarPerPip = this.getZARPerPip(symbol);
+        const decimals = this.getDecimals(symbol);
         
         // Calculate pips needed for ZAR targets (at 0.01 lot)
         const tp1Pips = Math.ceil(20 / zarPerPip);   // ~20 ZAR
@@ -953,12 +956,12 @@ class SMCAnalyzer {
             timeframeName: this.getTimeframeName(timeframe),
             action: 'SELL',
             bias: 'bearish',
-            entry: parseFloat(entry.toFixed(5)),
-            optimalEntry: parseFloat(pd.levels.ote_high.toFixed(5)),
-            sl: parseFloat(sl.toFixed(5)),
-            tp1: parseFloat(tp1.toFixed(5)),
-            tp2: parseFloat(tp2.toFixed(5)),
-            tp3: parseFloat(tp3.toFixed(5)),
+            entry: parseFloat(entry.toFixed(decimals)),
+            optimalEntry: parseFloat(pd.levels.ote_high.toFixed(decimals)),
+            sl: parseFloat(sl.toFixed(decimals)),
+            tp1: parseFloat(tp1.toFixed(decimals)),
+            tp2: parseFloat(tp2.toFixed(decimals)),
+            tp3: parseFloat(tp3.toFixed(decimals)),
             tp1Pips: tp1Pips,
             tp2Pips: tp2Pips,
             tp3Pips: tp3Pips,
@@ -967,6 +970,7 @@ class SMCAnalyzer {
             tp2ZAR: tp2ZAR,
             tp3ZAR: tp3ZAR,
             slZAR: slZAR,
+            decimals: decimals,
             confidence: overallConfidence,
             technicalConfidence: Math.min(100, technicalConfidence),
             smcConfidence: Math.min(100, smcConfidence),
@@ -979,6 +983,22 @@ class SMCAnalyzer {
             status: 'active',
             concepts: ['Trendlines', 'SMC/ICT', 'News Sentiment']
         };
+    }
+
+    getDecimals(symbol) {
+        // Decimal places for different instruments
+        const decimalPlaces = {
+            'XAUUSD': 2,    // Gold: 2 decimals (2650.00)
+            'BTCUSD': 2,    // Bitcoin: 2 decimals (45000.00)
+            'USDJPY': 2,    // USD/JPY: 2 decimals (150.00)
+            'EURUSD': 4,    // EUR/USD: 4 decimals (1.0500)
+            'GBPUSD': 4,    // GBP/USD: 4 decimals (1.2500)
+            'USDCAD': 4,    // USD/CAD: 4 decimals (1.3500)
+            'AUDUSD': 4,    // AUD/USD: 4 decimals (0.6500)
+            'AUDCAD': 4     // AUD/CAD: 4 decimals (0.9000)
+        };
+        
+        return decimalPlaces[symbol] || 4; // Default to 4 decimals
     }
 
     getPipValue(symbol) {
