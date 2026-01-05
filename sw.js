@@ -1,5 +1,5 @@
 // Service Worker for MzanziFx
-const CACHE_NAME = 'mzanzifx-v5.01'; // VERSION 5.01 - API key hardcoded + SMC drawing active
+const CACHE_NAME = 'mzanzifx-v5.02'; // VERSION 5.02 - Fixed signal generation + SMC drawing
 const urlsToCache = [
   './',
   './index.html',
@@ -19,7 +19,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('✅ Cache opened - v5.01');
+        console.log('✅ Cache opened - v5.02');
         return cache.addAll(urlsToCache);
       })
   );
