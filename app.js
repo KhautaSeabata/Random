@@ -285,7 +285,7 @@ async function generateSignal() {
 /**
  * Show signal notification with vibration and sound
  */
-function showSignalNotification(signal) {
+async function showSignalNotification(signal) {
     // Vibrate if supported
     if ('vibrate' in navigator) {
         navigator.vibrate([200, 100, 200, 100, 200, 100, 400]);
@@ -294,12 +294,33 @@ function showSignalNotification(signal) {
     // Play notification sound
     playNotificationSound();
     
-    // Show rich notification
-    if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification('🎯 New Trading Signal!', {
-            body: `${signal.action} ${signal.symbol} at ${signal.entry}\nConfidence: ${signal.confidence}%`,
-            requireInteraction: true
-        });
+    // Show rich notification using service worker
+    if ('serviceWorker' in navigator && 'Notification' in window) {
+        if (Notification.permission === 'granted') {
+            try {
+                const registration = await navigator.serviceWorker.ready;
+                await registration.showNotification('🎯 New Trading Signal!', {
+                    body: `${signal.action} ${signal.symbol} at ${signal.entry}\nConfidence: ${signal.confidence}%`,
+                    icon: '/icon-192.png',
+                    badge: '/icon-192.png',
+                    vibrate: [200, 100, 200],
+                    tag: 'trading-signal',
+                    requireInteraction: true,
+                    actions: [
+                        { action: 'view', title: 'View Signal' },
+                        { action: 'close', title: 'Dismiss' }
+                    ]
+                });
+            } catch (error) {
+                console.log('📱 Notification not shown:', error.message);
+            }
+        } else if (Notification.permission !== 'denied') {
+            // Request permission
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                showSignalNotification(signal); // Retry
+            }
+        }
     }
 }
 

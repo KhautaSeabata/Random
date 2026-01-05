@@ -27,6 +27,7 @@
         .content { 
             flex: 1; 
             padding: 20px;
+            padding-bottom: 80px; /* Space for fixed bottom nav */
             overflow-y: auto;
         }
         
@@ -126,11 +127,18 @@
         }
         
         .bottom-nav { 
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
             background: #1a1a1a; 
             border-top: 1px solid #2a2a2a; 
             display: flex; 
             justify-content: space-around; 
-            padding: 8px 0; 
+            padding: 8px 0;
+            padding-bottom: max(8px, env(safe-area-inset-bottom));
+            z-index: 1000;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
         }
         .nav-item { 
             display: flex; 
@@ -213,7 +221,10 @@
             <div class="setting-title">ℹ️ About</div>
             <div class="setting-description">
                 MzanziFx Trading Terminal<br>
-                <strong>Version 5.09</strong><br>
+                <strong>Version 5.10</strong><br>
+                <strong>Fixed:</strong><br>
+                • Notification constructor error<br>
+                • Bottom nav now always visible<br><br>
                 <strong>Decimal Precision:</strong><br>
                 • Gold/Bitcoin/JPY: 2 decimals<br>
                 • Forex pairs: 4 decimals<br><br>

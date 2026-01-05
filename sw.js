@@ -1,5 +1,5 @@
 // Service Worker for MzanziFx
-const CACHE_NAME = 'mzanzifx-v5.09'; // VERSION 5.09 - Dynamic decimal precision (2 for Gold/BTC/JPY, 4 for Forex)
+const CACHE_NAME = 'mzanzifx-v5.10'; // VERSION 5.10 - Fixed notifications + static bottom nav
 const urlsToCache = [
   './',
   './index.html',
@@ -19,7 +19,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('✅ Cache opened - v5.09');
+        console.log('✅ Cache opened - v5.10');
         return cache.addAll(urlsToCache);
       })
   );
