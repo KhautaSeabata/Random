@@ -1,5 +1,5 @@
 // Service Worker for MzanziFx
-const CACHE_NAME = 'mzanzifx-v5.12'; // VERSION 5.12 - Visible line labels + current price line
+const CACHE_NAME = 'mzanzifx-v5.13'; // VERSION 5.13 - Removed trendlines, centered S/R labels
 const urlsToCache = [
   './',
   './index.html',
@@ -19,7 +19,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('✅ Cache opened - v5.12');
+        console.log('✅ Cache opened - v5.13');
         return cache.addAll(urlsToCache);
       })
   );
