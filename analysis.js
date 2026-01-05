@@ -1,6 +1,7 @@
 /**
- * PROFESSIONAL SMC/ICT ANALYSIS - ZOOM_TRADER STYLE
- * Analysis with progress tracking 0-100%
+ * COMPLETE TRADING ANALYSIS
+ * Combines: Trendlines + SMC/ICT + Sentiment
+ * Draws: Only trendlines and S/R on chart
  */
 
 class SMCAnalyzer {
@@ -9,44 +10,38 @@ class SMCAnalyzer {
         this.analysisProgress = 0;
         this.progressCallback = null;
         this.analysis = {
+            // Chart drawing (visible)
+            trendlines: [],
+            channels: [],
+            supportResistance: [],
+            premiumDiscount: null,
+            
+            // SMC analysis (invisible but used for signals)
             marketStructure: null,
             orderBlocks: [],
             advancedOBs: [],
             fvgs: [],
             liquidityZones: [],
-            supportResistance: [],
-            premiumDiscount: null,
-            wyckoff: null,
-            patterns: [],
-            channels: [],
             breakouts: [],
             retests: [],
             chochs: [],
-            bos: []
+            bos: [],
+            wyckoff: null
         };
     }
 
-    /**
-     * Set progress callback
-     */
     setProgressCallback(callback) {
         this.progressCallback = callback;
     }
 
-    /**
-     * Update progress
-     */
     updateProgress(percent, message) {
         this.analysisProgress = percent;
         if (this.progressCallback) {
             this.progressCallback(percent, message);
         }
-        console.log(`📊 Analysis: ${percent}% - ${message}`);
+        console.log(`📊 ${percent}% - ${message}`);
     }
 
-    /**
-     * Enhanced analysis with progress 0-100%
-     */
     async analyze(candles, symbol, timeframe) {
         if (!candles || candles.length < 100) {
             console.warn('⚠️ Not enough candles');
@@ -57,60 +52,65 @@ class SMCAnalyzer {
         this.analysisProgress = 0;
         
         try {
-            this.updateProgress(5, 'Starting analysis...');
+            // PHASE 1: TRENDLINES (for chart drawing)
+            this.updateProgress(5, 'Identifying market structure...');
             await this.sleep(100);
-            
-            this.updateProgress(10, 'Identifying market structure...');
             this.identifyMarketStructure();
-            await this.sleep(100);
             
-            this.updateProgress(20, 'Finding order blocks...');
-            this.findOrderBlocks();
+            this.updateProgress(10, 'Drawing trendlines...');
             await this.sleep(100);
+            this.drawTrendlines();
             
-            this.updateProgress(30, 'Detecting advanced order blocks...');
-            this.findAdvancedOrderBlocks();
+            this.updateProgress(15, 'Detecting channels...');
             await this.sleep(100);
+            this.detectChannels();
             
-            this.updateProgress(40, 'Detecting fair value gaps...');
-            this.detectFairValueGaps();
+            this.updateProgress(20, 'Finding support/resistance...');
             await this.sleep(100);
-            
-            this.updateProgress(50, 'Finding liquidity zones...');
-            this.findLiquidityZones();
-            await this.sleep(100);
-            
-            this.updateProgress(60, 'Calculating support/resistance...');
             this.findSupportResistance();
-            await this.sleep(100);
             
-            this.updateProgress(70, 'Analyzing premium/discount...');
-            this.calculatePremiumDiscount();
+            // PHASE 2: SMC ANALYSIS (for signal logic)
+            this.updateProgress(30, 'Finding order blocks...');
             await this.sleep(100);
+            this.findOrderBlocks();
             
-            this.updateProgress(75, 'Detecting breakouts...');
+            this.updateProgress(40, 'Detecting advanced OBs...');
+            await this.sleep(100);
+            this.findAdvancedOrderBlocks();
+            
+            this.updateProgress(50, 'Detecting fair value gaps...');
+            await this.sleep(100);
+            this.detectFairValueGaps();
+            
+            this.updateProgress(60, 'Finding liquidity zones...');
+            await this.sleep(100);
+            this.findLiquidityZones();
+            
+            this.updateProgress(70, 'Detecting breakouts & CHoCH...');
+            await this.sleep(100);
             this.detectBreakouts();
-            await this.sleep(100);
+            this.detectChoCHAndBOS();
             
             this.updateProgress(80, 'Finding retest zones...');
+            await this.sleep(100);
             this.findRetestZones();
-            await this.sleep(100);
             
-            this.updateProgress(85, 'Detecting CHoCH & BOS...');
-            this.detectChoCHAndBOS();
+            this.updateProgress(85, 'Analyzing Wyckoff phase...');
             await this.sleep(100);
-            
-            this.updateProgress(90, 'Analyzing Wyckoff phase...');
             this.analyzeWyckoff();
-            await this.sleep(100);
             
-            this.updateProgress(95, 'Fetching news analysis...');
+            this.updateProgress(90, 'Calculating premium/discount...');
+            await this.sleep(100);
+            this.calculatePremiumDiscount();
+            
+            // PHASE 3: NEWS SENTIMENT
+            this.updateProgress(95, 'Fetching news sentiment...');
             const signal = await this.generateSignal(symbol, timeframe);
             
             this.updateProgress(100, 'Analysis complete!');
             await this.sleep(200);
             
-            console.log('✅ Professional analysis complete');
+            console.log('✅ Complete analysis finished');
             return signal;
             
         } catch (error) {
@@ -124,24 +124,19 @@ class SMCAnalyzer {
     }
 
     /**
-     * Get drawable elements
+     * Get drawables - ONLY trendlines and S/R
      */
     getDrawables() {
         return {
-            orderBlocks: [...this.analysis.orderBlocks, ...this.analysis.advancedOBs],
-            fvgs: this.analysis.fvgs || [],
-            liquidityZones: this.analysis.liquidityZones || [],
+            trendlines: this.analysis.trendlines || [],
+            channels: this.analysis.channels || [],
             supportResistance: this.analysis.supportResistance || [],
-            premiumDiscount: this.analysis.premiumDiscount || null,
-            breakouts: this.analysis.breakouts || [],
-            retests: this.analysis.retests || [],
-            chochs: this.analysis.chochs || [],
-            bos: this.analysis.bos || []
+            premiumDiscount: this.analysis.premiumDiscount || null
         };
     }
 
     /**
-     * 1. MARKET STRUCTURE - Identify swings
+     * MARKET STRUCTURE
      */
     identifyMarketStructure() {
         const swings = this.findSwingPoints();
@@ -152,28 +147,19 @@ class SMCAnalyzer {
             const prev = swings[i-2];
             const curr = swings[i];
             
-            if (curr.type === 'high' && curr.price > prev.price) {
-                higherHighs++;
-            }
-            if (curr.type === 'low' && curr.price < prev.price) {
-                lowerLows++;
-            }
+            if (curr.type === 'high' && curr.price > prev.price) higherHighs++;
+            if (curr.type === 'low' && curr.price < prev.price) lowerLows++;
         }
 
         const trend = higherHighs > lowerLows ? 'bullish' : 
                      lowerLows > higherHighs ? 'bearish' : 'ranging';
 
-        this.analysis.marketStructure = {
-            trend,
-            swings,
-            higherHighs,
-            lowerLows
-        };
+        this.analysis.marketStructure = { trend, swings, higherHighs, lowerLows };
     }
 
     findSwingPoints() {
         const swings = [];
-        const period = 5;
+        const period = 7;
 
         for (let i = period; i < this.candles.length - period; i++) {
             const current = this.candles[i];
@@ -182,38 +168,155 @@ class SMCAnalyzer {
 
             for (let j = 1; j <= period; j++) {
                 if (this.candles[i-j].high >= current.high || 
-                    this.candles[i+j].high >= current.high) {
-                    isHigh = false;
-                }
+                    this.candles[i+j].high >= current.high) isHigh = false;
                 if (this.candles[i-j].low <= current.low || 
-                    this.candles[i+j].low <= current.low) {
-                    isLow = false;
-                }
+                    this.candles[i+j].low <= current.low) isLow = false;
             }
 
-            if (isHigh) {
-                swings.push({ 
-                    type: 'high', 
-                    price: current.high, 
-                    index: i,
-                    time: current.time 
-                });
-            }
-            if (isLow) {
-                swings.push({ 
-                    type: 'low', 
-                    price: current.low, 
-                    index: i,
-                    time: current.time 
-                });
-            }
+            if (isHigh) swings.push({ type: 'high', price: current.high, index: i });
+            if (isLow) swings.push({ type: 'low', price: current.low, index: i });
         }
 
         return swings;
     }
 
     /**
-     * 2. ORDER BLOCKS (Regular)
+     * TRENDLINES (for drawing)
+     */
+    drawTrendlines() {
+        const trendlines = [];
+        const swings = this.analysis.marketStructure?.swings || [];
+        
+        const lows = swings.filter(s => s.type === 'low').slice(-10);
+        if (lows.length >= 3) {
+            for (let i = 0; i < lows.length - 2; i++) {
+                for (let j = i + 1; j < lows.length - 1; j++) {
+                    const line = this.createTrendline(lows[i], lows[j], 'support');
+                    if (line && line.touches >= 3) trendlines.push(line);
+                }
+            }
+        }
+        
+        const highs = swings.filter(s => s.type === 'high').slice(-10);
+        if (highs.length >= 3) {
+            for (let i = 0; i < highs.length - 2; i++) {
+                for (let j = i + 1; j < highs.length - 1; j++) {
+                    const line = this.createTrendline(highs[i], highs[j], 'resistance');
+                    if (line && line.touches >= 3) trendlines.push(line);
+                }
+            }
+        }
+        
+        this.analysis.trendlines = trendlines
+            .sort((a, b) => b.touches - a.touches)
+            .slice(0, 4);
+    }
+
+    createTrendline(point1, point2, type) {
+        const slope = (point2.price - point1.price) / (point2.index - point1.index);
+        let touches = 2;
+        const tolerance = 0.002;
+        
+        const swings = this.analysis.marketStructure.swings;
+        const touchPoints = [point1, point2];
+        
+        for (const swing of swings) {
+            if (swing.index <= point1.index || swing.index >= point2.index) continue;
+            const expectedPrice = point1.price + slope * (swing.index - point1.index);
+            const diff = Math.abs(swing.price - expectedPrice) / expectedPrice;
+            
+            if (diff < tolerance) {
+                touches++;
+                touchPoints.push(swing);
+            }
+        }
+        
+        if (touches < 3) return null;
+        
+        return {
+            type,
+            slope,
+            startPoint: point1,
+            endPoint: point2,
+            touches,
+            touchPoints,
+            label: type === 'support' ? 'Support Trendline' : 'Resistance Trendline'
+        };
+    }
+
+    /**
+     * CHANNELS (for drawing)
+     */
+    detectChannels() {
+        const channels = [];
+        const trendlines = this.analysis.trendlines;
+        
+        if (trendlines.length < 2) {
+            this.analysis.channels = [];
+            return;
+        }
+        
+        for (let i = 0; i < trendlines.length; i++) {
+            for (let j = i + 1; j < trendlines.length; j++) {
+                const line1 = trendlines[i];
+                const line2 = trendlines[j];
+                
+                const slopeDiff = Math.abs(line1.slope - line2.slope);
+                if (slopeDiff < 0.0001) {
+                    const channelType = line1.slope > 0 ? 'upward' : 
+                                       line1.slope < 0 ? 'downward' : 'sideways';
+                    
+                    channels.push({
+                        type: channelType,
+                        upperLine: line1.type === 'resistance' ? line1 : line2,
+                        lowerLine: line1.type === 'support' ? line1 : line2,
+                        medianPrice: (line1.startPoint.price + line2.startPoint.price) / 2,
+                        label: `${channelType.charAt(0).toUpperCase() + channelType.slice(1)} Channel`
+                    });
+                }
+            }
+        }
+        
+        this.analysis.channels = channels.slice(0, 2);
+    }
+
+    /**
+     * SUPPORT/RESISTANCE (for drawing)
+     */
+    findSupportResistance() {
+        const levels = [];
+        const tolerance = 0.002;
+        
+        this.candles.forEach((candle, i) => {
+            [candle.high, candle.low, candle.close].forEach(price => {
+                const existing = levels.find(l => 
+                    Math.abs(l.price - price) / price < tolerance
+                );
+                
+                if (existing) {
+                    existing.touches++;
+                    existing.lastTouch = i;
+                } else {
+                    levels.push({ price, touches: 1, lastTouch: i });
+                }
+            });
+        });
+        
+        const current = this.candles[this.candles.length - 1].close;
+        
+        this.analysis.supportResistance = levels
+            .filter(l => l.touches >= 4)
+            .sort((a, b) => b.touches - a.touches)
+            .slice(0, 8)
+            .map(l => ({
+                ...l,
+                type: l.price > current ? 'resistance' : 'support',
+                label: `${l.price > current ? 'Resistance' : 'Support'} (${l.touches}x)`
+            }));
+    }
+
+    /**
+     * ORDER BLOCKS (SMC - not drawn but used for signals)
      */
     findOrderBlocks() {
         const orderBlocks = [];
@@ -222,7 +325,6 @@ class SMCAnalyzer {
             const prev = this.candles[i];
             const next = this.candles[i + 1];
             
-            // Bullish OB
             if (prev.close < prev.open && next.close > next.open) {
                 const move = (next.close - next.open) / next.open;
                 if (move > 0.003) {
@@ -231,14 +333,11 @@ class SMCAnalyzer {
                         top: prev.high,
                         bottom: prev.low,
                         index: i,
-                        strength: move * 100,
-                        label: 'Order Block',
-                        category: 'regular'
+                        strength: move * 100
                     });
                 }
             }
             
-            // Bearish OB
             if (prev.close > prev.open && next.close < next.open) {
                 const move = (next.open - next.close) / next.open;
                 if (move > 0.003) {
@@ -247,9 +346,7 @@ class SMCAnalyzer {
                         top: prev.high,
                         bottom: prev.low,
                         index: i,
-                        strength: move * 100,
-                        label: 'Order Block',
-                        category: 'regular'
+                        strength: move * 100
                     });
                 }
             }
@@ -261,7 +358,7 @@ class SMCAnalyzer {
     }
 
     /**
-     * 3. ADVANCED ORDER BLOCKS (Extreme OB)
+     * ADVANCED ORDER BLOCKS (SMC)
      */
     findAdvancedOrderBlocks() {
         const advancedOBs = [];
@@ -270,33 +367,26 @@ class SMCAnalyzer {
             const prev = this.candles[i];
             const next = this.candles[i + 1];
             
-            // Check for extreme moves (>1%)
             const bullishMove = next.close > next.open ? (next.close - next.open) / next.open : 0;
             const bearishMove = next.close < next.open ? (next.open - next.close) / next.open : 0;
             
-            // Extreme Bullish OB
             if (prev.close < prev.open && bullishMove > 0.01) {
                 advancedOBs.push({
                     type: 'bullish',
                     top: prev.high,
                     bottom: prev.low,
                     index: i,
-                    strength: bullishMove * 100,
-                    label: 'Extreme OB',
-                    category: 'advanced'
+                    strength: bullishMove * 100
                 });
             }
             
-            // Extreme Bearish OB
             if (prev.close > prev.open && bearishMove > 0.01) {
                 advancedOBs.push({
                     type: 'bearish',
                     top: prev.high,
                     bottom: prev.low,
                     index: i,
-                    strength: bearishMove * 100,
-                    label: 'Extreme OB',
-                    category: 'advanced'
+                    strength: bearishMove * 100
                 });
             }
         }
@@ -307,7 +397,7 @@ class SMCAnalyzer {
     }
 
     /**
-     * 4. FAIR VALUE GAPS
+     * FAIR VALUE GAPS (SMC)
      */
     detectFairValueGaps() {
         const fvgs = [];
@@ -316,7 +406,6 @@ class SMCAnalyzer {
             const prev = this.candles[i - 1];
             const next = this.candles[i + 1];
             
-            // Bullish FVG
             if (prev.high < next.low) {
                 const gap = next.low - prev.high;
                 const filled = this.checkFVGFilled(i, 'bullish', prev.high, next.low);
@@ -327,12 +416,10 @@ class SMCAnalyzer {
                     bottom: prev.high,
                     index: i,
                     size: gap,
-                    filled: filled,
-                    label: 'FVG'
+                    filled
                 });
             }
             
-            // Bearish FVG
             if (prev.low > next.high) {
                 const gap = prev.low - next.high;
                 const filled = this.checkFVGFilled(i, 'bearish', next.high, prev.low);
@@ -343,8 +430,7 @@ class SMCAnalyzer {
                     bottom: next.high,
                     index: i,
                     size: gap,
-                    filled: filled,
-                    label: 'FVG'
+                    filled
                 });
             }
         }
@@ -362,7 +448,7 @@ class SMCAnalyzer {
     }
 
     /**
-     * 5. LIQUIDITY ZONES with sweeps
+     * LIQUIDITY ZONES (SMC)
      */
     findLiquidityZones() {
         const zones = [];
@@ -375,8 +461,7 @@ class SMCAnalyzer {
                 type: swing.type === 'high' ? 'buy-side' : 'sell-side',
                 price: swing.price,
                 index: swing.index,
-                swept: swept,
-                label: swept ? 'Liquidity Swept' : 'Liquidity'
+                swept
             });
         });
         
@@ -387,87 +472,14 @@ class SMCAnalyzer {
         const tolerance = 0.001;
         for (let i = swing.index + 1; i < this.candles.length; i++) {
             const candle = this.candles[i];
-            if (swing.type === 'high' && candle.high > swing.price * (1 + tolerance)) {
-                return true;
-            }
-            if (swing.type === 'low' && candle.low < swing.price * (1 - tolerance)) {
-                return true;
-            }
+            if (swing.type === 'high' && candle.high > swing.price * (1 + tolerance)) return true;
+            if (swing.type === 'low' && candle.low < swing.price * (1 - tolerance)) return true;
         }
         return false;
     }
 
     /**
-     * 6. SUPPORT/RESISTANCE
-     */
-    findSupportResistance() {
-        const levels = [];
-        const tolerance = 0.002;
-        
-        this.candles.forEach((candle, i) => {
-            [candle.high, candle.low].forEach(price => {
-                const existing = levels.find(l => 
-                    Math.abs(l.price - price) / price < tolerance
-                );
-                
-                if (existing) {
-                    existing.touches++;
-                    existing.lastTouch = i;
-                } else {
-                    levels.push({ 
-                        price, 
-                        touches: 1,
-                        lastTouch: i
-                    });
-                }
-            });
-        });
-        
-        const current = this.candles[this.candles.length - 1].close;
-        
-        this.analysis.supportResistance = levels
-            .filter(l => l.touches >= 3)
-            .sort((a, b) => b.touches - a.touches)
-            .slice(0, 6)
-            .map(l => ({
-                ...l,
-                type: l.price > current ? 'resistance' : 'support',
-                label: `${l.price > current ? 'Resistance' : 'Support'}`
-            }));
-    }
-
-    /**
-     * 7. PREMIUM/DISCOUNT ZONES
-     */
-    calculatePremiumDiscount() {
-        const recent = this.candles.slice(-100);
-        const high = Math.max(...recent.map(c => c.high));
-        const low = Math.min(...recent.map(c => c.low));
-        const range = high - low;
-        
-        const levels = {
-            high: high,
-            fib786: high - (range * 0.214),
-            fib618: high - (range * 0.382),
-            equilibrium: high - (range * 0.5),
-            fib382: high - (range * 0.618),
-            fib236: high - (range * 0.764),
-            low: low,
-            ote_high: high - (range * 0.214),
-            ote_low: high - (range * 0.382)
-        };
-        
-        const current = this.candles[this.candles.length - 1].close;
-        let zone = 'equilibrium';
-        
-        if (current >= levels.fib618) zone = 'premium';
-        else if (current <= levels.fib382) zone = 'discount';
-        
-        this.analysis.premiumDiscount = { levels, currentZone: zone };
-    }
-
-    /**
-     * 8. BREAKOUT DETECTION
+     * BREAKOUTS (SMC)
      */
     detectBreakouts() {
         const breakouts = [];
@@ -479,45 +491,31 @@ class SMCAnalyzer {
         
         const last5 = this.candles.slice(-5);
         
-        // Bullish breakout
         if (last5.some(c => c.close > resistance * 1.002)) {
-            breakouts.push({
-                type: 'bullish',
-                price: resistance,
-                index: this.candles.length - 5,
-                label: 'Breakout'
-            });
+            breakouts.push({ type: 'bullish', price: resistance, index: this.candles.length - 5 });
         }
         
-        // Bearish breakout
         if (last5.some(c => c.close < support * 0.998)) {
-            breakouts.push({
-                type: 'bearish',
-                price: support,
-                index: this.candles.length - 5,
-                label: 'Breakout'
-            });
+            breakouts.push({ type: 'bearish', price: support, index: this.candles.length - 5 });
         }
         
         this.analysis.breakouts = breakouts;
     }
 
     /**
-     * 9. RETEST ZONES
+     * RETESTS (SMC)
      */
     findRetestZones() {
         const retests = [];
         const breakouts = this.analysis.breakouts || [];
         
         breakouts.forEach(bo => {
-            const retested = this.checkRetest(bo);
-            if (retested) {
+            if (this.checkRetest(bo)) {
                 retests.push({
                     type: 'retest',
                     price: bo.price,
                     direction: bo.type,
-                    index: bo.index + 3,
-                    label: 'Retest'
+                    index: bo.index + 3
                 });
             }
         });
@@ -538,7 +536,7 @@ class SMCAnalyzer {
     }
 
     /**
-     * 10. CHoCH & BOS DETECTION
+     * CHoCH & BOS (SMC)
      */
     detectChoCHAndBOS() {
         const swings = this.analysis.marketStructure?.swings || [];
@@ -547,46 +545,21 @@ class SMCAnalyzer {
         
         for (let i = 2; i < swings.length; i++) {
             const prevPrev = swings[i-2];
-            const prev = swings[i-1];
             const curr = swings[i];
             
-            // CHoCH - Change of Character (trend change)
             if (prevPrev.type === curr.type) {
                 if (curr.type === 'high' && curr.price < prevPrev.price) {
-                    chochs.push({
-                        type: 'bearish',
-                        price: curr.price,
-                        index: curr.index,
-                        label: 'CHoCH'
-                    });
+                    chochs.push({ type: 'bearish', price: curr.price, index: curr.index });
                 }
                 if (curr.type === 'low' && curr.price > prevPrev.price) {
-                    chochs.push({
-                        type: 'bullish',
-                        price: curr.price,
-                        index: curr.index,
-                        label: 'CHoCH'
-                    });
+                    chochs.push({ type: 'bullish', price: curr.price, index: curr.index });
                 }
-            }
-            
-            // BOS - Break of Structure (trend continuation)
-            if (prevPrev.type === curr.type) {
+                
                 if (curr.type === 'high' && curr.price > prevPrev.price) {
-                    bos.push({
-                        type: 'bullish',
-                        price: curr.price,
-                        index: curr.index,
-                        label: 'BOS'
-                    });
+                    bos.push({ type: 'bullish', price: curr.price, index: curr.index });
                 }
                 if (curr.type === 'low' && curr.price < prevPrev.price) {
-                    bos.push({
-                        type: 'bearish',
-                        price: curr.price,
-                        index: curr.index,
-                        label: 'BOS'
-                    });
+                    bos.push({ type: 'bearish', price: curr.price, index: curr.index });
                 }
             }
         }
@@ -596,7 +569,7 @@ class SMCAnalyzer {
     }
 
     /**
-     * 11. WYCKOFF PHASE
+     * WYCKOFF (SMC)
      */
     analyzeWyckoff() {
         const recent = this.candles.slice(-30);
@@ -631,21 +604,50 @@ class SMCAnalyzer {
     }
 
     /**
-     * SIGNAL GENERATION with full analysis
+     * PREMIUM/DISCOUNT
+     */
+    calculatePremiumDiscount() {
+        const recent = this.candles.slice(-100);
+        const high = Math.max(...recent.map(c => c.high));
+        const low = Math.min(...recent.map(c => c.low));
+        const range = high - low;
+        
+        const levels = {
+            high,
+            fib786: high - (range * 0.214),
+            fib618: high - (range * 0.382),
+            equilibrium: high - (range * 0.5),
+            fib382: high - (range * 0.618),
+            fib236: high - (range * 0.764),
+            low,
+            ote_high: high - (range * 0.214),
+            ote_low: high - (range * 0.382)
+        };
+        
+        const current = this.candles[this.candles.length - 1].close;
+        let zone = 'equilibrium';
+        
+        if (current >= levels.fib618) zone = 'premium';
+        else if (current <= levels.fib382) zone = 'discount';
+        
+        this.analysis.premiumDiscount = { levels, currentZone: zone };
+    }
+
+    /**
+     * SIGNAL GENERATION - Combines all 3 methods
      */
     async generateSignal(symbol, timeframe) {
         const current = this.candles[this.candles.length - 1];
         const structure = this.analysis.marketStructure;
         const pd = this.analysis.premiumDiscount;
         
-        if (!structure || !pd) {
-            return null;
-        }
+        if (!structure || !pd) return null;
         
-        // Get news
+        // Get news sentiment
         let newsAnalysis = null;
         try {
             newsAnalysis = await newsAnalyzer.analyzeCurrency(symbol);
+            console.log(`📰 News: ${newsAnalysis.direction} (${newsAnalysis.sentiment})`);
         } catch (error) {
             console.warn('⚠️ News unavailable');
         }
@@ -654,68 +656,96 @@ class SMCAnalyzer {
         let confidence = 0;
         let reasons = [];
         
-        // Build analysis data for storage
         const analysisData = {
-            orderBlocks: this.analysis.orderBlocks.slice(0, 5),
-            advancedOBs: this.analysis.advancedOBs.slice(0, 3),
-            fvgs: this.analysis.fvgs.filter(f => !f.filled).slice(0, 5),
-            liquidityZones: this.analysis.liquidityZones.slice(0, 5),
+            trendlines: this.analysis.trendlines,
+            channels: this.analysis.channels,
             supportResistance: this.analysis.supportResistance,
+            orderBlocks: this.analysis.orderBlocks.slice(0, 5),
+            advancedOBs: this.analysis.advancedOBs,
+            fvgs: this.analysis.fvgs.filter(f => !f.filled).slice(0, 5),
+            liquidityZones: this.analysis.liquidityZones,
             breakouts: this.analysis.breakouts,
-            retests: this.analysis.retests,
             chochs: this.analysis.chochs,
             bos: this.analysis.bos,
             wyckoff: this.analysis.wyckoff,
             premiumDiscount: pd.currentZone
         };
         
-        // BULLISH SIGNAL
+        // BULLISH SIGNAL - Combine all methods
         if (bias === 'bullish') {
+            // Premium/Discount
             if (pd.currentZone === 'discount') {
-                confidence += 25;
-                reasons.push('✅ Price in discount zone');
+                confidence += 20;
+                reasons.push('✅ Discount zone');
             }
             
+            // Trendlines
+            const supportLine = this.analysis.trendlines.find(t => t.type === 'support');
+            if (supportLine) {
+                confidence += 15;
+                reasons.push(`✅ Support trendline (${supportLine.touches}x)`);
+            }
+            
+            // Channels
+            const upChannel = this.analysis.channels.find(c => c.type === 'upward');
+            if (upChannel) {
+                confidence += 10;
+                reasons.push('✅ Upward channel');
+            }
+            
+            // S/R
+            const support = this.analysis.supportResistance.find(sr => sr.type === 'support');
+            if (support) {
+                confidence += 10;
+                reasons.push(`✅ Support ${support.price.toFixed(2)} (${support.touches}x)`);
+            }
+            
+            // SMC: Order Blocks
             const bullishOB = this.analysis.orderBlocks.find(ob => 
                 ob.type === 'bullish' && 
                 current.close >= ob.bottom && 
                 current.close <= ob.top * 1.02
             );
             if (bullishOB) {
-                confidence += 20;
-                reasons.push(`✅ ${bullishOB.label} at ${bullishOB.bottom.toFixed(2)}`);
+                confidence += 10;
+                reasons.push('✅ Bullish order block');
             }
             
+            // SMC: FVG
             const bullishFVG = this.analysis.fvgs.find(fvg => 
                 fvg.type === 'bullish' && !fvg.filled
             );
             if (bullishFVG) {
-                confidence += 15;
-                reasons.push('✅ Bullish FVG support');
+                confidence += 10;
+                reasons.push('✅ Bullish FVG');
             }
             
+            // SMC: Liquidity
             if (this.analysis.liquidityZones.some(lz => lz.type === 'sell-side' && lz.swept)) {
-                confidence += 15;
+                confidence += 10;
                 reasons.push('✅ Liquidity swept');
             }
             
+            // SMC: CHoCH
             if (this.analysis.chochs.some(ch => ch.type === 'bullish')) {
-                confidence += 10;
-                reasons.push('✅ Bullish CHoCH detected');
+                confidence += 5;
+                reasons.push('✅ Bullish CHoCH');
             }
             
+            // Wyckoff
             if (this.analysis.wyckoff?.phase === 'accumulation') {
-                confidence += 15;
+                confidence += 10;
                 reasons.push('✅ Wyckoff accumulation');
             }
             
+            // NEWS SENTIMENT
             if (newsAnalysis) {
                 if (newsAnalysis.direction === 'BULLISH') {
                     confidence += 15;
-                    reasons.push(`📰 Bullish news: +${newsAnalysis.sentiment}`);
+                    reasons.push(`📰 Bullish news: +${newsAnalysis.sentiment}/100`);
                 } else if (newsAnalysis.direction === 'BEARISH') {
-                    confidence -= 20;
-                    reasons.push(`⚠️ Bearish news: ${newsAnalysis.sentiment}`);
+                    confidence -= 15;
+                    reasons.push(`⚠️ Bearish news: ${newsAnalysis.sentiment}/100`);
                 }
             }
             
@@ -724,14 +754,32 @@ class SMCAnalyzer {
             }
         }
         
-        // BEARISH SIGNAL
+        // BEARISH SIGNAL - Combine all methods
         if (bias === 'bearish') {
             confidence = 0;
             reasons = [];
             
             if (pd.currentZone === 'premium') {
-                confidence += 25;
-                reasons.push('✅ Price in premium zone');
+                confidence += 20;
+                reasons.push('✅ Premium zone');
+            }
+            
+            const resistanceLine = this.analysis.trendlines.find(t => t.type === 'resistance');
+            if (resistanceLine) {
+                confidence += 15;
+                reasons.push(`✅ Resistance trendline (${resistanceLine.touches}x)`);
+            }
+            
+            const downChannel = this.analysis.channels.find(c => c.type === 'downward');
+            if (downChannel) {
+                confidence += 10;
+                reasons.push('✅ Downward channel');
+            }
+            
+            const resistance = this.analysis.supportResistance.find(sr => sr.type === 'resistance');
+            if (resistance) {
+                confidence += 10;
+                reasons.push(`✅ Resistance ${resistance.price.toFixed(2)} (${resistance.touches}x)`);
             }
             
             const bearishOB = this.analysis.orderBlocks.find(ob => 
@@ -740,40 +788,40 @@ class SMCAnalyzer {
                 current.close >= ob.bottom * 0.98
             );
             if (bearishOB) {
-                confidence += 20;
-                reasons.push(`✅ ${bearishOB.label} at ${bearishOB.top.toFixed(2)}`);
+                confidence += 10;
+                reasons.push('✅ Bearish order block');
             }
             
             const bearishFVG = this.analysis.fvgs.find(fvg => 
                 fvg.type === 'bearish' && !fvg.filled
             );
             if (bearishFVG) {
-                confidence += 15;
-                reasons.push('✅ Bearish FVG resistance');
+                confidence += 10;
+                reasons.push('✅ Bearish FVG');
             }
             
             if (this.analysis.liquidityZones.some(lz => lz.type === 'buy-side' && lz.swept)) {
-                confidence += 15;
+                confidence += 10;
                 reasons.push('✅ Liquidity swept');
             }
             
             if (this.analysis.chochs.some(ch => ch.type === 'bearish')) {
-                confidence += 10;
-                reasons.push('✅ Bearish CHoCH detected');
+                confidence += 5;
+                reasons.push('✅ Bearish CHoCH');
             }
             
             if (this.analysis.wyckoff?.phase === 'distribution') {
-                confidence += 15;
+                confidence += 10;
                 reasons.push('✅ Wyckoff distribution');
             }
             
             if (newsAnalysis) {
                 if (newsAnalysis.direction === 'BEARISH') {
                     confidence += 15;
-                    reasons.push(`📰 Bearish news: ${newsAnalysis.sentiment}`);
+                    reasons.push(`📰 Bearish news: ${newsAnalysis.sentiment}/100`);
                 } else if (newsAnalysis.direction === 'BULLISH') {
-                    confidence -= 20;
-                    reasons.push(`⚠️ Bullish news: +${newsAnalysis.sentiment}`);
+                    confidence -= 15;
+                    reasons.push(`⚠️ Bullish news: +${newsAnalysis.sentiment}/100`);
                 }
             }
             
@@ -797,13 +845,6 @@ class SMCAnalyzer {
         let tp2 = entry + (riskAmount * 2.5);
         let tp3 = entry + (riskAmount * 4.0);
         
-        if (newsAnalysis && newsAnalysis.volatility > 60) {
-            sl = sl * 0.98;
-            tp1 = entry + (riskAmount * 2.0);
-            tp2 = entry + (riskAmount * 3.0);
-            tp3 = entry + (riskAmount * 5.0);
-        }
-        
         return {
             symbol, timeframe,
             action: 'BUY',
@@ -821,7 +862,7 @@ class SMCAnalyzer {
             analysisData,
             timestamp: Date.now(),
             status: 'active',
-            concepts: ['SMC', 'ICT', 'Liquidity', 'CHoCH', 'BOS']
+            concepts: ['Trendlines', 'SMC/ICT', 'News Sentiment']
         };
     }
 
@@ -836,13 +877,6 @@ class SMCAnalyzer {
         let tp1 = entry - (riskAmount * 1.5);
         let tp2 = entry - (riskAmount * 2.5);
         let tp3 = entry - (riskAmount * 4.0);
-        
-        if (newsAnalysis && newsAnalysis.volatility > 60) {
-            sl = sl * 1.02;
-            tp1 = entry - (riskAmount * 2.0);
-            tp2 = entry - (riskAmount * 3.0);
-            tp3 = entry - (riskAmount * 5.0);
-        }
         
         return {
             symbol, timeframe,
@@ -861,7 +895,7 @@ class SMCAnalyzer {
             analysisData,
             timestamp: Date.now(),
             status: 'active',
-            concepts: ['SMC', 'ICT', 'Liquidity', 'CHoCH', 'BOS']
+            concepts: ['Trendlines', 'SMC/ICT', 'News Sentiment']
         };
     }
 }

@@ -1,5 +1,5 @@
 // Service Worker for MzanziFx
-const CACHE_NAME = 'mzanzifx-v5.04'; // VERSION 5.04 - Analysis 0-100% progress, no trendlines
+const CACHE_NAME = 'mzanzifx-v5.06'; // VERSION 5.06 - Complete 3-method analysis
 const urlsToCache = [
   './',
   './index.html',
@@ -19,7 +19,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('✅ Cache opened - v5.04');
+        console.log('✅ Cache opened - v5.06');
         return cache.addAll(urlsToCache);
       })
   );
