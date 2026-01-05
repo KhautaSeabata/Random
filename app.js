@@ -46,7 +46,7 @@ window.addEventListener('load', async () => {
 function loadChartData() {
     console.log(`📊 Loading ${currentSymbol} ${dataManager.getTimeframeName(currentTimeframe)}`);
     
-    dataManager.loadData(currentSymbol, currentTimeframe, async (data, isLiveUpdate) => {
+    dataManager.loadData(currentSymbol, currentTimeframe, (data, isLiveUpdate) => {
         if (isLiveUpdate) {
             // Update last candle
             if (data && data.length > 0) {
@@ -54,7 +54,7 @@ function loadChartData() {
                 updatePriceDisplay();
                 
                 // Analyze and draw SMC on every update
-                await analyzeSMC();
+                analyzeSMC();
             }
         } else {
             // Set full chart data
@@ -69,7 +69,7 @@ function loadChartData() {
                 updatePriceDisplay();
                 
                 // Initial SMC analysis
-                await analyzeSMC();
+                analyzeSMC();
             } else {
                 console.warn('⚠️ No data received');
             }
@@ -78,15 +78,23 @@ function loadChartData() {
 }
 
 /**
- * Analyze SMC and update chart drawings
+ * Analyze SMC and update chart drawings (SYNCHRONOUS - no await)
  */
-async function analyzeSMC() {
+function analyzeSMC() {
     try {
         const candles = dataManager.getChartData();
         if (!candles || candles.length < 50) return;
         
-        // Run analysis (without generating signal)
-        await smcAnalyzer.analyze(candles, currentSymbol, currentTimeframe);
+        // Run analysis synchronously (just for drawing, not signal generation)
+        smcAnalyzer.candles = candles;
+        smcAnalyzer.identifyMarketStructure();
+        smcAnalyzer.findOrderBlocks();
+        smcAnalyzer.detectFairValueGaps();
+        smcAnalyzer.findLiquidityZones();
+        smcAnalyzer.drawTrendlines();
+        smcAnalyzer.findSupportResistance();
+        smcAnalyzer.calculatePremiumDiscount();
+        smcAnalyzer.analyzeWyckoff();
         
         // Get drawable elements
         const drawings = smcAnalyzer.getDrawables();
@@ -94,9 +102,10 @@ async function analyzeSMC() {
         // Update chart with drawings
         if (chart && drawings) {
             chart.updateDrawings(drawings);
+            console.log('📊 SMC drawings updated');
         }
     } catch (error) {
-        console.error('❌ SMC analysis error:', error);
+        console.error('❌ SMC drawing error:', error);
     }
 }
 
@@ -219,17 +228,21 @@ function showNotification(message) {
 }
 
 /**
- * Generate trading signal with news analysis
+ * Generate trading signal with progress display
  */
 async function generateSignal() {
-    // Handle both button IDs (top and bottom)
     const btnTop = document.getElementById('generateBtnTop');
     const btnBottom = document.getElementById('generateBtn');
     
     if (btnTop) btnTop.classList.add('loading');
     if (btnBottom) btnBottom.classList.add('loading');
     
-    showNotification('🔍 Analyzing market + news...');
+    // Set up progress callback
+    smcAnalyzer.setProgressCallback((percent, message) => {
+        showNotification(`${percent}% - ${message}`);
+    });
+    
+    showNotification('0% - Starting analysis...');
     
     try {
         const candles = dataManager.getChartData();
@@ -241,23 +254,28 @@ async function generateSignal() {
             return;
         }
         
-        // Run SMC analysis (now async for news)
+        console.log('🎯 Starting professional analysis with progress...');
+        
+        // Run analysis with progress tracking
         const signal = await smcAnalyzer.analyze(candles, currentSymbol, currentTimeframe);
         
         if (signal) {
+            console.log('✅ Signal generated:', signal.action, signal.confidence + '%');
+            
             // Save to Firebase
             await signalTracker.saveSignal(signal);
             
-            // Show notification with vibration
+            // Show notification
             showSignalNotification(signal);
             
             showNotification(`✅ ${signal.action} signal! (${signal.confidence}%)`);
         } else {
+            console.log('⚠️ No valid signal');
             showNotification('⚠️ No valid signal found');
         }
     } catch (error) {
         console.error('❌ Signal generation error:', error);
-        showNotification('❌ Generation failed');
+        showNotification('❌ Generation failed: ' + error.message);
     }
     
     if (btnTop) btnTop.classList.remove('loading');
