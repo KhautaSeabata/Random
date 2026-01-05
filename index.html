@@ -100,6 +100,16 @@
             font-weight: 600;
         }
 
+        .timeframe-label {
+            background: #4caf50;
+            color: #000;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
         /* Generate Button - Next to Symbol */
         .generate-btn-top {
             background: linear-gradient(135deg, #4caf50, #45a049);
@@ -402,6 +412,7 @@
                     <option value="AUDCAD">AUDCAD</option>
                     <option value="USDJPY">USDJPY</option>
                 </select>
+                <div class="timeframe-label" id="timeframeLabel">5M</div>
                 <button class="generate-btn-top" id="generateBtnTop" onclick="generateSignal()">
                     <span>⚡</span>
                     <span>Generate</span>

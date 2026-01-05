@@ -3,11 +3,20 @@
  */
 
 let chart;
-let currentSymbol = 'XAUUSD';
-let currentTimeframe = 300;
+let currentSymbol = localStorage.getItem('selectedSymbol') || 'XAUUSD';
+let currentTimeframe = parseInt(localStorage.getItem('selectedTimeframe')) || 300;
 
 window.addEventListener('load', async () => {
     console.log('🚀 Initializing MzanziFx...');
+    
+    // Restore saved symbol and timeframe
+    const symbolSelect = document.getElementById('symbolSelect');
+    const timeframeSelect = document.getElementById('timeframeSelect');
+    if (symbolSelect) symbolSelect.value = currentSymbol;
+    if (timeframeSelect) timeframeSelect.value = currentTimeframe;
+    
+    // Update timeframe display
+    updateTimeframeDisplay();
     
     // Initialize chart first
     chart = new ChartRenderer('chart');
@@ -138,6 +147,9 @@ function changeSymbol() {
     const select = document.getElementById('symbolSelect');
     currentSymbol = select.value;
     
+    // Save to localStorage
+    localStorage.setItem('selectedSymbol', currentSymbol);
+    
     console.log(`🔄 Changing to ${currentSymbol}`);
     
     // Unsubscribe from old symbol
@@ -156,7 +168,13 @@ function changeSymbol() {
 function selectTimeframe(timeframe) {
     currentTimeframe = timeframe;
     
+    // Save to localStorage
+    localStorage.setItem('selectedTimeframe', currentTimeframe);
+    
     console.log(`🔄 Changing to ${dataManager.getTimeframeName(timeframe)}`);
+    
+    // Update timeframe display
+    updateTimeframeDisplay();
     
     // Update active state
     document.querySelectorAll('.tf-item').forEach(item => {
@@ -215,6 +233,25 @@ function resetView() {
     if (chart) {
         chart.resetZoom();
         showNotification('↩️ View Reset');
+    }
+}
+
+/**
+ * Update timeframe display in top bar
+ */
+function updateTimeframeDisplay() {
+    const timeframeLabel = document.getElementById('timeframeLabel');
+    if (timeframeLabel) {
+        const names = {
+            60: '1M',
+            300: '5M',
+            900: '15M',
+            1800: '30M',
+            3600: '1H',
+            14400: '4H',
+            86400: '1D'
+        };
+        timeframeLabel.textContent = names[currentTimeframe] || currentTimeframe + 's';
     }
 }
 
