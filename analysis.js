@@ -852,18 +852,36 @@ class SMCAnalyzer {
         const entry = current.close;
         const pd = this.analysis.premiumDiscount;
         
-        // Get pip value based on symbol
+        // Get pip value and profit per pip for ZAR calculation
         const pipValue = this.getPipValue(symbol);
+        const zarPerPip = this.getZARPerPip(symbol);
         
-        // 10, 20, 30 pips targets
-        const tp1 = entry + (10 * pipValue);  // 10 pips
-        const tp2 = entry + (20 * pipValue);  // 20 pips
-        const tp3 = entry + (30 * pipValue);  // 30 pips
+        // Calculate pips needed for ZAR targets (at 0.01 lot)
+        // TP1: ZAR 18-25 (use ZAR 20)
+        // TP2: ZAR 30-60 (use ZAR 45)
+        // TP3: ZAR 60-100 (use ZAR 80)
+        // SL: Below ZAR 30 (use ZAR 25)
         
-        // Stop loss: 15 pips or swing low
+        const tp1Pips = Math.ceil(20 / zarPerPip);   // ~20 ZAR
+        const tp2Pips = Math.ceil(45 / zarPerPip);   // ~45 ZAR
+        const tp3Pips = Math.ceil(80 / zarPerPip);   // ~80 ZAR
+        const slPips = Math.ceil(25 / zarPerPip);    // ~25 ZAR loss
+        
+        const tp1 = entry + (tp1Pips * pipValue);
+        const tp2 = entry + (tp2Pips * pipValue);
+        const tp3 = entry + (tp3Pips * pipValue);
+        
+        // Stop loss: Based on ZAR or swing low (whichever is closer)
         const swings = this.analysis.marketStructure.swings.filter(s => s.type === 'low');
         const recentLow = swings.length > 0 ? Math.min(...swings.slice(-3).map(s => s.price)) : entry * 0.98;
-        let sl = Math.min(entry - (15 * pipValue), recentLow * 0.995);
+        const calculatedSL = entry - (slPips * pipValue);
+        let sl = Math.max(calculatedSL, recentLow * 0.995); // Use closer SL
+        
+        // Calculate actual ZAR profit/loss
+        const tp1ZAR = Math.round(tp1Pips * zarPerPip);
+        const tp2ZAR = Math.round(tp2Pips * zarPerPip);
+        const tp3ZAR = Math.round(tp3Pips * zarPerPip);
+        const slZAR = Math.round(Math.abs((sl - entry) / pipValue) * zarPerPip);
         
         return {
             symbol,
@@ -877,14 +895,19 @@ class SMCAnalyzer {
             tp1: parseFloat(tp1.toFixed(5)),
             tp2: parseFloat(tp2.toFixed(5)),
             tp3: parseFloat(tp3.toFixed(5)),
-            tp1Pips: 10,
-            tp2Pips: 20,
-            tp3Pips: 30,
+            tp1Pips: tp1Pips,
+            tp2Pips: tp2Pips,
+            tp3Pips: tp3Pips,
+            slPips: slPips,
+            tp1ZAR: tp1ZAR,
+            tp2ZAR: tp2ZAR,
+            tp3ZAR: tp3ZAR,
+            slZAR: slZAR,
             confidence: overallConfidence,
             technicalConfidence: Math.min(100, technicalConfidence),
             smcConfidence: Math.min(100, smcConfidence),
             sentimentConfidence: Math.min(100, newsConfidence),
-            riskReward: 2.0,
+            riskReward: parseFloat((tp2Pips / slPips).toFixed(2)),
             reasons,
             newsAnalysis,
             analysisData,
@@ -898,18 +921,31 @@ class SMCAnalyzer {
         const entry = current.close;
         const pd = this.analysis.premiumDiscount;
         
-        // Get pip value based on symbol
+        // Get pip value and profit per pip for ZAR calculation
         const pipValue = this.getPipValue(symbol);
+        const zarPerPip = this.getZARPerPip(symbol);
         
-        // 10, 20, 30 pips targets
-        const tp1 = entry - (10 * pipValue);  // 10 pips
-        const tp2 = entry - (20 * pipValue);  // 20 pips
-        const tp3 = entry - (30 * pipValue);  // 30 pips
+        // Calculate pips needed for ZAR targets (at 0.01 lot)
+        const tp1Pips = Math.ceil(20 / zarPerPip);   // ~20 ZAR
+        const tp2Pips = Math.ceil(45 / zarPerPip);   // ~45 ZAR
+        const tp3Pips = Math.ceil(80 / zarPerPip);   // ~80 ZAR
+        const slPips = Math.ceil(25 / zarPerPip);    // ~25 ZAR loss
         
-        // Stop loss: 15 pips or swing high
+        const tp1 = entry - (tp1Pips * pipValue);
+        const tp2 = entry - (tp2Pips * pipValue);
+        const tp3 = entry - (tp3Pips * pipValue);
+        
+        // Stop loss: Based on ZAR or swing high (whichever is closer)
         const swings = this.analysis.marketStructure.swings.filter(s => s.type === 'high');
         const recentHigh = swings.length > 0 ? Math.max(...swings.slice(-3).map(s => s.price)) : entry * 1.02;
-        let sl = Math.max(entry + (15 * pipValue), recentHigh * 1.005);
+        const calculatedSL = entry + (slPips * pipValue);
+        let sl = Math.min(calculatedSL, recentHigh * 1.005); // Use closer SL
+        
+        // Calculate actual ZAR profit/loss
+        const tp1ZAR = Math.round(tp1Pips * zarPerPip);
+        const tp2ZAR = Math.round(tp2Pips * zarPerPip);
+        const tp3ZAR = Math.round(tp3Pips * zarPerPip);
+        const slZAR = Math.round(Math.abs((sl - entry) / pipValue) * zarPerPip);
         
         return {
             symbol,
@@ -923,14 +959,19 @@ class SMCAnalyzer {
             tp1: parseFloat(tp1.toFixed(5)),
             tp2: parseFloat(tp2.toFixed(5)),
             tp3: parseFloat(tp3.toFixed(5)),
-            tp1Pips: 10,
-            tp2Pips: 20,
-            tp3Pips: 30,
+            tp1Pips: tp1Pips,
+            tp2Pips: tp2Pips,
+            tp3Pips: tp3Pips,
+            slPips: slPips,
+            tp1ZAR: tp1ZAR,
+            tp2ZAR: tp2ZAR,
+            tp3ZAR: tp3ZAR,
+            slZAR: slZAR,
             confidence: overallConfidence,
             technicalConfidence: Math.min(100, technicalConfidence),
             smcConfidence: Math.min(100, smcConfidence),
             sentimentConfidence: Math.min(100, newsConfidence),
-            riskReward: 2.0,
+            riskReward: parseFloat((tp2Pips / slPips).toFixed(2)),
             reasons,
             newsAnalysis,
             analysisData,
@@ -954,6 +995,32 @@ class SMCAnalyzer {
         };
         
         return pipValues[symbol] || 0.0001;
+    }
+
+    getZARPerPip(symbol) {
+        // ZAR profit per pip at 0.01 lot size (standard account)
+        // Based on: (Contract size × Lot size × Pip value) × USD/ZAR rate
+        // Assuming USD/ZAR ≈ 18.50
+        
+        const zarRate = 18.50; // USD to ZAR exchange rate
+        
+        const pipProfits = {
+            // Major Forex Pairs (100,000 units per lot)
+            'EURUSD': 0.0001 * 1000 * zarRate,    // ~1.85 ZAR/pip
+            'GBPUSD': 0.0001 * 1000 * zarRate,    // ~1.85 ZAR/pip
+            'USDCAD': 0.0001 * 1000 * zarRate,    // ~1.85 ZAR/pip
+            'AUDUSD': 0.0001 * 1000 * zarRate,    // ~1.85 ZAR/pip
+            'AUDCAD': 0.0001 * 1000 * zarRate,    // ~1.85 ZAR/pip
+            'USDJPY': 0.01 * 1000 * zarRate,      // ~185 ZAR/pip
+            
+            // Gold (100 oz per lot)
+            'XAUUSD': 0.01 * 100 * zarRate,       // ~18.50 ZAR/pip
+            
+            // Bitcoin (1 BTC per lot at 0.01 = 0.01 BTC)
+            'BTCUSD': 1.0 * 0.01 * zarRate        // ~0.185 ZAR/pip
+        };
+        
+        return pipProfits[symbol] || 1.85; // Default to forex pair
     }
 
     getTimeframeName(timeframe) {

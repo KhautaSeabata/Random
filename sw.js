@@ -1,5 +1,5 @@
 // Service Worker for MzanziFx
-const CACHE_NAME = 'mzanzifx-v5.07'; // VERSION 5.07 - Always generate signals + confidence breakdown + pip targets
+const CACHE_NAME = 'mzanzifx-v5.08'; // VERSION 5.08 - ZAR profit targets (TP1:R20, TP2:R45, TP3:R80, SL:R25)
 const urlsToCache = [
   './',
   './index.html',
@@ -19,7 +19,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('✅ Cache opened - v5.07');
+        console.log('✅ Cache opened - v5.08');
         return cache.addAll(urlsToCache);
       })
   );
