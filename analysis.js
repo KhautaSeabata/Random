@@ -692,21 +692,22 @@ class SMCAnalyzer {
                 reasons.push('✅ Discount zone');
             }
             
-            const supportLine = this.analysis.trendlines.find(t => t.type === 'support');
-            if (supportLine) {
-                technicalConfidence += 35;
-                reasons.push(`✅ Support trendline (${supportLine.touches}x)`);
-            }
+            // Trendlines disabled - using S/R instead
+            // const supportLine = this.analysis.trendlines.find(t => t.type === 'support');
+            // if (supportLine) {
+            //     technicalConfidence += 35;
+            //     reasons.push(`✅ Support trendline (${supportLine.touches}x)`);
+            // }
             
-            const upChannel = this.analysis.channels.find(c => c.type === 'upward');
-            if (upChannel) {
-                technicalConfidence += 20;
-                reasons.push('✅ Upward channel');
-            }
+            // const upChannel = this.analysis.channels.find(c => c.type === 'upward');
+            // if (upChannel) {
+            //     technicalConfidence += 20;
+            //     reasons.push('✅ Upward channel');
+            // }
             
             const support = this.analysis.supportResistance.find(sr => sr.type === 'support');
             if (support) {
-                technicalConfidence += 15;
+                technicalConfidence += 50; // Increased weight since no trendlines
                 reasons.push(`✅ Support ${support.price.toFixed(2)} (${support.touches}x)`);
             }
             
@@ -775,21 +776,22 @@ class SMCAnalyzer {
                 reasons.push('✅ Premium zone');
             }
             
-            const resistanceLine = this.analysis.trendlines.find(t => t.type === 'resistance');
-            if (resistanceLine) {
-                technicalConfidence += 35;
-                reasons.push(`✅ Resistance trendline (${resistanceLine.touches}x)`);
-            }
+            // Trendlines disabled - using S/R instead
+            // const resistanceLine = this.analysis.trendlines.find(t => t.type === 'resistance');
+            // if (resistanceLine) {
+            //     technicalConfidence += 35;
+            //     reasons.push(`✅ Resistance trendline (${resistanceLine.touches}x)`);
+            // }
             
-            const downChannel = this.analysis.channels.find(c => c.type === 'downward');
-            if (downChannel) {
-                technicalConfidence += 20;
-                reasons.push('✅ Downward channel');
-            }
+            // const downChannel = this.analysis.channels.find(c => c.type === 'downward');
+            // if (downChannel) {
+            //     technicalConfidence += 20;
+            //     reasons.push('✅ Downward channel');
+            // }
             
             const resistance = this.analysis.supportResistance.find(sr => sr.type === 'resistance');
             if (resistance) {
-                technicalConfidence += 15;
+                technicalConfidence += 50; // Increased weight since no trendlines
                 reasons.push(`✅ Resistance ${resistance.price.toFixed(2)} (${resistance.touches}x)`);
             }
             

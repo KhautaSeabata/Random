@@ -347,12 +347,12 @@ class ChartRenderer {
             });
         }
         
-        // 3. Trendlines
-        if (this.drawings.trendlines) {
-            this.drawings.trendlines.forEach(tl => {
-                this.drawTrendline(tl, width, height, startIndex, visible.length, candleWidth, priceToY);
-            });
-        }
+        // 3. Trendlines - DISABLED (only showing S/R lines)
+        // if (this.drawings.trendlines) {
+        //     this.drawings.trendlines.forEach(tl => {
+        //         this.drawTrendline(tl, width, height, startIndex, visible.length, candleWidth, priceToY);
+        //     });
+        // }
         
         // 4. Order Blocks
         if (this.drawings.orderBlocks) {
@@ -430,6 +430,7 @@ class ChartRenderer {
         const y = priceToY(sr.price);
         const color = sr.type === 'support' ? '#4caf50' : '#f44336';
         
+        // Draw the dotted line
         this.ctx.strokeStyle = color;
         this.ctx.lineWidth = 2;
         this.ctx.setLineDash([10, 5]);
@@ -439,10 +440,33 @@ class ChartRenderer {
         this.ctx.stroke();
         this.ctx.setLineDash([]);
         
-        // Label
+        // Label CENTERED and ON TOP of line
+        const labelText = `${sr.type.toUpperCase()} (${sr.touches}x)`;
+        this.ctx.font = 'bold 13px -apple-system, BlinkMacSystemFont, sans-serif';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'bottom';
+        
+        // Measure text for background box
+        const metrics = this.ctx.measureText(labelText);
+        const padding = 8;
+        const boxWidth = metrics.width + padding * 2;
+        const boxHeight = 22;
+        const centerX = width / 2;
+        const boxX = centerX - (boxWidth / 2);
+        const boxY = y - boxHeight - 3; // Position above the line
+        
+        // Draw background box
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+        this.ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+        
+        // Draw border around box (same color as line)
+        this.ctx.strokeStyle = color;
+        this.ctx.lineWidth = 1;
+        this.ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
+        
+        // Draw text centered
         this.ctx.fillStyle = color;
-        this.ctx.font = 'bold 10px sans-serif';
-        this.ctx.fillText(`${sr.type.toUpperCase()} (${sr.touches}x)`, 5, y - 5);
+        this.ctx.fillText(labelText, centerX, y - 5);
     }
 
     /**

@@ -101,7 +101,7 @@ function analyzeSMC() {
         smcAnalyzer.findOrderBlocks();
         smcAnalyzer.detectFairValueGaps();
         smcAnalyzer.findLiquidityZones();
-        smcAnalyzer.drawTrendlines();
+        // smcAnalyzer.drawTrendlines(); // DISABLED - not drawing trendlines
         smcAnalyzer.findSupportResistance();
         smcAnalyzer.calculatePremiumDiscount();
         smcAnalyzer.analyzeWyckoff();
