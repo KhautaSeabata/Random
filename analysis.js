@@ -854,38 +854,74 @@ class SMCAnalyzer {
     createBuySignal(symbol, timeframe, current, overallConfidence, technicalConfidence, smcConfidence, newsConfidence, reasons, newsAnalysis, analysisData) {
         const entry = current.close;
         const pd = this.analysis.premiumDiscount;
-        
-        // Get pip value and profit per pip for ZAR calculation
-        const pipValue = this.getPipValue(symbol);
-        const zarPerPip = this.getZARPerPip(symbol);
         const decimals = this.getDecimals(symbol);
+        const pipValue = this.getPipValue(symbol);
         
-        // Calculate pips needed for ZAR targets (at 0.01 lot)
-        // TP1: ZAR 18-25 (use ZAR 20)
-        // TP2: ZAR 30-60 (use ZAR 45)
-        // TP3: ZAR 60-100 (use ZAR 80)
-        // SL: Below ZAR 30 (use ZAR 25)
+        // Find key levels from market structure
+        const swings = this.analysis.marketStructure.swings;
+        const highs = swings.filter(s => s.type === 'high').slice(-5);
+        const lows = swings.filter(s => s.type === 'low').slice(-5);
+        const resistance = this.analysis.supportResistance.filter(sr => sr.type === 'resistance' && sr.price > entry);
+        const support = this.analysis.supportResistance.filter(sr => sr.type === 'support' && sr.price < entry);
         
-        const tp1Pips = Math.ceil(20 / zarPerPip);   // ~20 ZAR
-        const tp2Pips = Math.ceil(45 / zarPerPip);   // ~45 ZAR
-        const tp3Pips = Math.ceil(80 / zarPerPip);   // ~80 ZAR
-        const slPips = Math.ceil(25 / zarPerPip);    // ~25 ZAR loss
+        // Calculate SL: Place below recent swing low or nearest support
+        let sl;
+        if (lows.length > 0) {
+            const recentLow = Math.min(...lows.map(s => s.price));
+            sl = recentLow - (pipValue * 5); // 5 pips buffer
+        } else if (support.length > 0) {
+            const nearestSupport = support.reduce((prev, curr) => 
+                Math.abs(curr.price - entry) < Math.abs(prev.price - entry) ? curr : prev
+            );
+            sl = nearestSupport.price - (pipValue * 5);
+        } else {
+            // Fallback: Use percentage
+            sl = entry * 0.995;
+        }
         
-        const tp1 = entry + (tp1Pips * pipValue);
-        const tp2 = entry + (tp2Pips * pipValue);
-        const tp3 = entry + (tp3Pips * pipValue);
+        // Calculate TPs: Target key resistance levels or Fibonacci extensions
+        const slDistance = Math.abs(entry - sl);
         
-        // Stop loss: Based on ZAR or swing low (whichever is closer)
-        const swings = this.analysis.marketStructure.swings.filter(s => s.type === 'low');
-        const recentLow = swings.length > 0 ? Math.min(...swings.slice(-3).map(s => s.price)) : entry * 0.98;
-        const calculatedSL = entry - (slPips * pipValue);
-        let sl = Math.max(calculatedSL, recentLow * 0.995); // Use closer SL
+        let tp1, tp2, tp3;
         
-        // Calculate actual ZAR profit/loss
+        // TP1: First resistance or 1.5R
+        if (resistance.length > 0 && resistance[0].price < entry + (slDistance * 3)) {
+            tp1 = resistance[0].price;
+        } else {
+            tp1 = entry + (slDistance * 1.5);
+        }
+        
+        // TP2: Second resistance or 2.5R
+        if (resistance.length > 1 && resistance[1].price < entry + (slDistance * 4)) {
+            tp2 = resistance[1].price;
+        } else {
+            tp2 = entry + (slDistance * 2.5);
+        }
+        
+        // TP3: Third resistance or 4R
+        if (resistance.length > 2 && resistance[2].price < entry + (slDistance * 6)) {
+            tp3 = resistance[2].price;
+        } else if (highs.length > 0) {
+            const recentHigh = Math.max(...highs.map(s => s.price));
+            if (recentHigh > entry) {
+                tp3 = recentHigh + (pipValue * 5); // Beyond recent high
+            } else {
+                tp3 = entry + (slDistance * 4);
+            }
+        } else {
+            tp3 = entry + (slDistance * 4);
+        }
+        
+        // Calculate ZAR values
+        const zarPerPip = this.getZARPerPip(symbol);
+        const tp1Pips = Math.round(Math.abs(tp1 - entry) / pipValue);
+        const tp2Pips = Math.round(Math.abs(tp2 - entry) / pipValue);
+        const tp3Pips = Math.round(Math.abs(tp3 - entry) / pipValue);
+        const slPips = Math.round(Math.abs(entry - sl) / pipValue);
         const tp1ZAR = Math.round(tp1Pips * zarPerPip);
         const tp2ZAR = Math.round(tp2Pips * zarPerPip);
         const tp3ZAR = Math.round(tp3Pips * zarPerPip);
-        const slZAR = Math.round(Math.abs((sl - entry) / pipValue) * zarPerPip);
+        const slZAR = Math.round(slPips * zarPerPip);
         
         return {
             symbol,
@@ -894,6 +930,7 @@ class SMCAnalyzer {
             action: 'BUY',
             bias: 'bullish',
             entry: parseFloat(entry.toFixed(decimals)),
+            entryTriggered: false, // Track if entry was hit
             optimalEntry: parseFloat(pd.levels.ote_low.toFixed(decimals)),
             sl: parseFloat(sl.toFixed(decimals)),
             tp1: parseFloat(tp1.toFixed(decimals)),
@@ -925,32 +962,87 @@ class SMCAnalyzer {
     createSellSignal(symbol, timeframe, current, overallConfidence, technicalConfidence, smcConfidence, newsConfidence, reasons, newsAnalysis, analysisData) {
         const entry = current.close;
         const pd = this.analysis.premiumDiscount;
-        
-        // Get pip value and profit per pip for ZAR calculation
-        const pipValue = this.getPipValue(symbol);
-        const zarPerPip = this.getZARPerPip(symbol);
         const decimals = this.getDecimals(symbol);
+        const pipValue = this.getPipValue(symbol);
         
-        // Calculate pips needed for ZAR targets (at 0.01 lot)
-        const tp1Pips = Math.ceil(20 / zarPerPip);   // ~20 ZAR
-        const tp2Pips = Math.ceil(45 / zarPerPip);   // ~45 ZAR
-        const tp3Pips = Math.ceil(80 / zarPerPip);   // ~80 ZAR
-        const slPips = Math.ceil(25 / zarPerPip);    // ~25 ZAR loss
+        // Find key levels from market structure
+        const swings = this.analysis.marketStructure.swings;
+        const highs = swings.filter(s => s.type === 'high').slice(-5);
+        const lows = swings.filter(s => s.type === 'low').slice(-5);
+        const resistance = this.analysis.supportResistance.filter(sr => sr.type === 'resistance' && sr.price > entry);
+        const support = this.analysis.supportResistance.filter(sr => sr.type === 'support' && sr.price < entry);
         
-        const tp1 = entry - (tp1Pips * pipValue);
-        const tp2 = entry - (tp2Pips * pipValue);
-        const tp3 = entry - (tp3Pips * pipValue);
+        // Calculate SL: Place above recent swing high or nearest resistance
+        let sl;
+        if (highs.length > 0) {
+            const recentHigh = Math.max(...highs.map(s => s.price));
+            sl = recentHigh + (pipValue * 5); // 5 pips buffer
+        } else if (resistance.length > 0) {
+            const nearestResistance = resistance.reduce((prev, curr) => 
+                Math.abs(curr.price - entry) < Math.abs(prev.price - entry) ? curr : prev
+            );
+            sl = nearestResistance.price + (pipValue * 5);
+        } else {
+            // Fallback: Use percentage
+            sl = entry * 1.005;
+        }
         
-        // Stop loss: Based on ZAR or swing high (whichever is closer)
-        const swings = this.analysis.marketStructure.swings.filter(s => s.type === 'high');
-        const recentHigh = swings.length > 0 ? Math.max(...swings.slice(-3).map(s => s.price)) : entry * 1.02;
-        const calculatedSL = entry + (slPips * pipValue);
-        let sl = Math.min(calculatedSL, recentHigh * 1.005); // Use closer SL
+        // Calculate TPs: Target key support levels or Fibonacci extensions
+        const slDistance = Math.abs(sl - entry);
         
-        // Calculate actual ZAR profit/loss
+        let tp1, tp2, tp3;
+        
+        // TP1: First support or 1.5R
+        if (support.length > 0 && support[support.length - 1].price > entry - (slDistance * 3)) {
+            tp1 = support[support.length - 1].price;
+        } else {
+            tp1 = entry - (slDistance * 1.5);
+        }
+        
+        // TP2: Second support or 2.5R
+        if (support.length > 1 && support[support.length - 2].price > entry - (slDistance * 4)) {
+            tp2 = support[support.length - 2].price;
+        } else {
+            tp2 = entry - (slDistance * 2.5);
+        }
+        
+        // TP3: Third support or 4R
+        if (support.length > 2 && support[support.length - 3].price > entry - (slDistance * 6)) {
+            tp3 = support[support.length - 3].price;
+        } else if (lows.length > 0) {
+            const recentLow = Math.min(...lows.map(s => s.price));
+            if (recentLow < entry) {
+                tp3 = recentLow - (pipValue * 5); // Beyond recent low
+            } else {
+                tp3 = entry - (slDistance * 4);
+            }
+        } else {
+            tp3 = entry - (slDistance * 4);
+        }
+        
+        // Calculate ZAR values
+        const zarPerPip = this.getZARPerPip(symbol);
+        const tp1Pips = Math.round(Math.abs(entry - tp1) / pipValue);
+        const tp2Pips = Math.round(Math.abs(entry - tp2) / pipValue);
+        const tp3Pips = Math.round(Math.abs(entry - tp3) / pipValue);
+        const slPips = Math.round(Math.abs(sl - entry) / pipValue);
         const tp1ZAR = Math.round(tp1Pips * zarPerPip);
         const tp2ZAR = Math.round(tp2Pips * zarPerPip);
         const tp3ZAR = Math.round(tp3Pips * zarPerPip);
+        const slZAR = Math.round(slPips * zarPerPip);
+        
+        return {
+            symbol,
+            timeframe,
+            timeframeName: this.getTimeframeName(timeframe),
+            action: 'SELL',
+            bias: 'bearish',
+            entry: parseFloat(entry.toFixed(decimals)),
+            entryTriggered: false, // Track if entry was hit
+            optimalEntry: parseFloat(pd.levels.ote_high.toFixed(decimals)),
+            sl: parseFloat(sl.toFixed(decimals)),
+            tp1: parseFloat(tp1.toFixed(decimals)),
+            tp2: parseFloat(tp2.toFixed(decimals)),
         const slZAR = Math.round(Math.abs((sl - entry) / pipValue) * zarPerPip);
         
         return {

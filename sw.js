@@ -1,5 +1,5 @@
 // Service Worker for MzanziFx
-const CACHE_NAME = 'mzanzifx-v5.14'; // VERSION 5.14 - Completely removed trendlines, centered S/R labels
+const CACHE_NAME = 'mzanzifx-v5.16'; // VERSION 5.16 - Structure-based TP/SL + Entry trigger tracking
 const urlsToCache = [
   './',
   './index.html',
@@ -19,7 +19,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('✅ Cache opened - v5.14');
+        console.log('✅ Cache opened - v5.16');
         return cache.addAll(urlsToCache);
       })
   );

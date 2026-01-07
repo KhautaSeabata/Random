@@ -127,6 +127,30 @@ class SignalTracker {
      * Determine signal status based on current price
      */
     determineStatus(signal, currentPrice) {
+        // First check if entry has been triggered
+        if (!signal.entryTriggered) {
+            // Check if price has reached entry point
+            const entryTolerance = signal.entry * 0.0005; // 0.05% tolerance
+            
+            if (signal.action === 'BUY') {
+                // For BUY, price needs to drop to or below entry
+                if (currentPrice <= signal.entry + entryTolerance) {
+                    signal.entryTriggered = true;
+                    return 'entry_triggered';
+                }
+            } else {
+                // For SELL, price needs to rise to or above entry
+                if (currentPrice >= signal.entry - entryTolerance) {
+                    signal.entryTriggered = true;
+                    return 'entry_triggered';
+                }
+            }
+            
+            // Entry not triggered yet, keep as active
+            return 'active';
+        }
+        
+        // Entry has been triggered, now check TP/SL
         if (signal.action === 'BUY') {
             // Check stop loss
             if (currentPrice <= signal.sl) {
