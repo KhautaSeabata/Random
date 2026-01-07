@@ -271,26 +271,43 @@ function showNotification(message) {
 }
 
 /**
- * Generate trading signal with progress display
+ * Generate trading signal with circular progress display
  */
 async function generateSignal() {
     const btnTop = document.getElementById('generateBtnTop');
     const btnBottom = document.getElementById('generateBtn');
+    const progressModal = document.getElementById('signalProgress');
+    const progressCircle = document.getElementById('progressCircle');
+    const progressText = document.getElementById('progressText');
+    const progressMessage = document.getElementById('progressMessage');
     
     if (btnTop) btnTop.classList.add('loading');
     if (btnBottom) btnBottom.classList.add('loading');
     
+    // Show circular progress
+    progressModal.classList.add('show');
+    
+    // Calculate circle circumference (2πr where r=52)
+    const circumference = 2 * Math.PI * 52;
+    progressCircle.style.strokeDasharray = circumference;
+    progressCircle.style.strokeDashoffset = circumference;
+    
     // Set up progress callback
     smcAnalyzer.setProgressCallback((percent, message) => {
-        showNotification(`${percent}% - ${message}`);
+        const offset = circumference - (percent / 100) * circumference;
+        progressCircle.style.strokeDashoffset = offset;
+        progressText.textContent = `${percent}%`;
+        progressMessage.textContent = message;
     });
     
-    showNotification('0% - Starting analysis...');
+    progressText.textContent = '0%';
+    progressMessage.textContent = 'Starting analysis...';
     
     try {
         const candles = dataManager.getChartData();
         
         if (!candles || candles.length < 100) {
+            progressModal.classList.remove('show');
             showNotification('⚠️ Not enough data');
             if (btnTop) btnTop.classList.remove('loading');
             if (btnBottom) btnBottom.classList.remove('loading');
@@ -308,16 +325,21 @@ async function generateSignal() {
             // Save to Firebase
             await signalTracker.saveSignal(signal);
             
+            // Hide progress modal
+            progressModal.classList.remove('show');
+            
             // Show notification
             showSignalNotification(signal);
             
             showNotification(`✅ ${signal.action} signal! (${signal.confidence}%)`);
         } else {
             console.log('⚠️ No valid signal');
+            progressModal.classList.remove('show');
             showNotification('⚠️ No valid signal found');
         }
     } catch (error) {
         console.error('❌ Signal generation error:', error);
+        progressModal.classList.remove('show');
         showNotification('❌ Generation failed: ' + error.message);
     }
     
