@@ -217,6 +217,33 @@
             height: 20px;
         }
         
+        .track-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #4caf50, #45a049);
+            color: #fff;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            margin-top: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.3s;
+        }
+        
+        .track-btn:active {
+            transform: scale(0.98);
+            background: linear-gradient(135deg, #45a049, #3d8b40);
+        }
+        
+        .track-btn.tracking {
+            background: linear-gradient(135deg, #2196f3, #1976d2);
+        }
+        
         .signal-reasons {
             margin-top: 10px;
             padding-top: 10px;
@@ -526,6 +553,12 @@
                     
                     <div class="signal-status ${signal.status}">${signal.status.replace('_', ' ')}</div>
                     
+                    ${signal.status === 'active' ? `
+                    <button class="track-btn" onclick="trackSignal('${signal.id}')">
+                        📍 Start Tracking
+                    </button>
+                    ` : ''}
+                    
                     <div class="signal-reasons">
                         ${signal.reasons.map(r => `• ${r}`).join('<br>')}
                     </div>
@@ -595,6 +628,80 @@
             } else {
                 deleteBtn.classList.remove('show');
             }
+        }
+        
+        async function trackSignal(signalId) {
+            try {
+                const signal = signals.find(s => s.id === signalId);
+                if (!signal) {
+                    alert('Signal not found');
+                    return;
+                }
+                
+                // Update button state
+                const btn = event.target;
+                btn.textContent = '✓ Tracking Started';
+                btn.classList.add('tracking');
+                btn.disabled = true;
+                
+                // Save to localStorage for tracker
+                localStorage.setItem('trackingSignal', JSON.stringify({
+                    id: signal.id,
+                    symbol: signal.symbol,
+                    action: signal.action,
+                    entry: signal.entry,
+                    sl: signal.sl,
+                    tp1: signal.tp1,
+                    tp2: signal.tp2,
+                    tp3: signal.tp3,
+                    timestamp: signal.timestamp
+                }));
+                
+                // Update signal status in Firebase
+                await fetch(`${firebaseUrl}/signals/${signalId}.json`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tracking: true,
+                        trackingStarted: Date.now()
+                    })
+                });
+                
+                // Show success notification
+                showNotification('📍 Signal tracking started!');
+                
+                // Reload signals after 1 second
+                setTimeout(() => {
+                    loadSignals();
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Error tracking signal:', error);
+                alert('Failed to start tracking');
+            }
+        }
+        
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(76, 175, 80, 0.95);
+                color: white;
+                padding: 12px 24px;
+                border-radius: 8px;
+                font-weight: 600;
+                z-index: 10000;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
         }
         
         async function deleteSelected() {

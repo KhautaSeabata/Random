@@ -20,6 +20,18 @@ class SignalTracker {
         console.log('📊 Starting signal tracker...');
         this.tracking = true;
         
+        // Check if there's a manually tracked signal
+        const trackingSignal = localStorage.getItem('trackingSignal');
+        if (trackingSignal) {
+            try {
+                const signal = JSON.parse(trackingSignal);
+                console.log('📍 Found manually tracked signal:', signal.symbol);
+                // Signal already in Firebase, will be tracked automatically
+            } catch (error) {
+                console.error('Error parsing tracking signal:', error);
+            }
+        }
+        
         // Load existing signals
         await this.loadSignals();
         
