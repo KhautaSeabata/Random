@@ -168,6 +168,7 @@ class NewsAnalyzer {
     // Layer 1: Analyze all 8 assets
     const assetAnalyses = [];
     for (const asset of currencyInfo.assets) {
+      console.log(`📊 Analyzing ${asset.name}...`);
       const analysis = await this.analyzeAsset(asset);
       assetAnalyses.push({
         ...analysis,
@@ -301,14 +302,16 @@ class NewsAnalyzer {
     }
     
     try {
+      // Use 7 days of news (Finnhub free tier limitation)
       const today = new Date();
-      const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
       
-      const from = sixHoursAgo.toISOString().split('T')[0];
+      const from = sevenDaysAgo.toISOString().split('T')[0];
       const to = today.toISOString().split('T')[0];
       
       const url = `https://finnhub.io/api/v1/company-news?symbol=${symbol}&from=${from}&to=${to}&token=${this.finnhubKey}`;
       
+      console.log(`📡 Fetching news for ${symbol}...`);
       const res = await fetch(url);
       
       if (!res.ok) {
@@ -317,10 +320,13 @@ class NewsAnalyzer {
       }
       
       const news = await res.json();
+      console.log(`📰 Got ${(news || []).length} articles for ${symbol}`);
       
-      // Filter to last 6 hours
-      const sixHoursAgoTimestamp = Date.now() / 1000 - 6 * 60 * 60;
-      const filtered = (news || []).filter(n => n.datetime > sixHoursAgoTimestamp);
+      // Filter to last 7 days (but analyze all)
+      const sevenDaysAgoTimestamp = Date.now() / 1000 - 7 * 24 * 60 * 60;
+      const filtered = (news || []).filter(n => n.datetime && n.datetime > sevenDaysAgoTimestamp);
+      
+      console.log(`📊 Filtered to ${filtered.length} recent articles`);
       
       this.cache.set(cacheKey, { data: filtered, time: Date.now() });
       
