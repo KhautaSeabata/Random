@@ -52,18 +52,20 @@ class SMCAnalyzer {
         this.analysisProgress = 0;
         
         try {
-            // PHASE 1: TRENDLINES (for chart drawing)
+            // PHASE 1: MARKET STRUCTURE
             this.updateProgress(5, 'Identifying market structure...');
             await this.sleep(100);
             this.identifyMarketStructure();
             
-            this.updateProgress(10, 'Drawing trendlines...');
+            this.updateProgress(10, 'Analyzing structure...');
             await this.sleep(100);
-            this.drawTrendlines();
+            // Skip trendlines - not drawing them
+            // this.drawTrendlines();
             
-            this.updateProgress(15, 'Detecting channels...');
+            this.updateProgress(15, 'Detecting patterns...');
             await this.sleep(100);
-            this.detectChannels();
+            // Skip channels
+            // this.detectChannels();
             
             this.updateProgress(20, 'Finding support/resistance...');
             await this.sleep(100);
@@ -644,11 +646,17 @@ class SMCAnalyzer {
         
         if (!structure || !pd) return null;
         
-        // Get news sentiment
+        // Get news sentiment with timeout
         let newsAnalysis = null;
         let newsConfidence = 0;
         try {
-            newsAnalysis = await newsAnalyzer.analyzeCurrency(symbol);
+            console.log('📰 Fetching news...');
+            const newsPromise = newsAnalyzer.analyzeCurrency(symbol);
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('News timeout')), 10000)
+            );
+            
+            newsAnalysis = await Promise.race([newsPromise, timeoutPromise]);
             console.log(`📰 News: ${newsAnalysis.direction} (${newsAnalysis.sentiment})`);
             
             // Calculate news confidence
@@ -660,7 +668,7 @@ class SMCAnalyzer {
                 newsConfidence = 50;
             }
         } catch (error) {
-            console.warn('⚠️ News unavailable');
+            console.warn('⚠️ News unavailable:', error.message);
             newsConfidence = 0;
         }
         

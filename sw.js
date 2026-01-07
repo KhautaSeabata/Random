@@ -1,5 +1,5 @@
 // Service Worker for MzanziFx
-const CACHE_NAME = 'mzanzifx-v5.17'; // VERSION 5.17 - Circular progress loader + S/R drawing maintained
+const CACHE_NAME = 'mzanzifx-v5.18'; // VERSION 5.18 - Fixed signal generation + S/R drawing confirmed
 const urlsToCache = [
   './',
   './index.html',
@@ -19,7 +19,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('✅ Cache opened - v5.17');
+        console.log('✅ Cache opened - v5.18');
         return cache.addAll(urlsToCache);
       })
   );
