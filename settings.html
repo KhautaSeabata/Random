@@ -2,262 +2,197 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#1a1a1a">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Settings - MzanziFx</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#000000">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: -apple-system, sans-serif; 
-            background: #000; 
-            color: #fff; 
-            display: flex; 
-            flex-direction: column; 
-            height: 100vh; 
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        .header { 
-            background: #1a1a1a; 
-            padding: 15px; 
-            border-bottom: 1px solid #2a2a2a; 
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            overflow-x: hidden;
         }
-        .title { 
-            font-size: 18px; 
-            font-weight: 700; 
-        }
-        .content { 
-            flex: 1; 
+
+        .header {
+            background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
             padding: 20px;
-            padding-bottom: 80px; /* Space for fixed bottom nav */
-            overflow-y: auto;
+            text-align: center;
+            border-bottom: 2px solid #4caf50;
         }
-        
-        .setting-group {
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .content {
+            padding: 20px;
+            padding-bottom: 80px;
+        }
+
+        .section {
             background: #1a1a1a;
             border-radius: 12px;
             padding: 20px;
             margin-bottom: 20px;
+            border: 1px solid #2a2a2a;
         }
-        
-        .setting-title {
-            font-size: 16px;
-            font-weight: 700;
-            color: #4caf50;
-            margin-bottom: 10px;
-        }
-        
-        .setting-description {
-            font-size: 13px;
-            color: #888;
+
+        .section-title {
+            font-size: 18px;
             margin-bottom: 15px;
-            line-height: 1.5;
+            color: #4caf50;
         }
-        
-        .setting-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid #2a2a2a;
+
+        .info-text {
+            font-size: 13px;
+            line-height: 1.8;
+            color: #ccc;
         }
-        
-        .setting-row:last-child {
-            border-bottom: none;
-        }
-        
-        .setting-label {
-            font-size: 14px;
-            font-weight: 600;
-        }
-        
-        /* Toggle Switch */
-        .toggle-switch {
-            position: relative;
-            width: 50px;
-            height: 28px;
-        }
-        
-        .toggle-input {
-            display: none;
-        }
-        
-        .toggle-slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #2a2a2a;
-            transition: .3s;
-            border-radius: 28px;
-        }
-        
-        .toggle-slider:before {
-            position: absolute;
-            content: "";
-            height: 20px;
-            width: 20px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: .3s;
-            border-radius: 50%;
-        }
-        
-        .toggle-input:checked + .toggle-slider {
-            background-color: #4caf50;
-        }
-        
-        .toggle-input:checked + .toggle-slider:before {
-            transform: translateX(22px);
-        }
-        
-        .status-indicator {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #666;
-            margin-left: 8px;
-        }
-        
-        .status-indicator.active {
-            background: #4caf50;
-            box-shadow: 0 0 10px #4caf50;
-        }
-        
-        .bottom-nav { 
+
+        .bottom-nav {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            background: #1a1a1a; 
-            border-top: 1px solid #2a2a2a; 
-            display: flex; 
-            justify-content: space-around; 
-            padding: 8px 0;
-            padding-bottom: max(8px, env(safe-area-inset-bottom));
+            background: #1a1a1a;
+            display: flex;
+            justify-content: space-around;
+            padding: 12px 0;
+            border-top: 1px solid #2a2a2a;
             z-index: 1000;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
+            padding-bottom: max(12px, env(safe-area-inset-bottom));
         }
-        .nav-item { 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            gap: 4px; 
-            flex: 1; 
-            cursor: pointer; 
-            padding: 4px; 
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.3s;
         }
-        .nav-icon { font-size: 20px; opacity: 0.5; }
-        .nav-label { font-size: 10px; font-weight: 600; opacity: 0.5; text-transform: uppercase; }
-        .nav-item.active .nav-icon,
-        .nav-item.active .nav-label { opacity: 1; }
+
+        .nav-item:active {
+            transform: scale(0.95);
+            background: #2a2a2a;
+        }
+
+        .nav-item.active {
+            background: #2a2a2a;
+        }
+
+        .nav-icon {
+            font-size: 24px;
+        }
+
+        .nav-label {
+            font-size: 10px;
+            color: #888;
+        }
+
+        .nav-item.active .nav-label {
+            color: #4caf50;
+        }
     </style>
 </head>
 <body>
     <div class="header">
-        <div class="title">Settings</div>
+        <h1>⚙️ Settings</h1>
+        <p>MzanziFx Trading Terminal</p>
     </div>
-    
+
     <div class="content">
-        <!-- Auto-Generate Signals -->
-        <div class="setting-group">
-            <div class="setting-title">🤖 Auto-Generate Signals</div>
-            <div class="setting-description">
-                Automatically analyze the market and generate trading signals every 5 minutes. 
-                You'll receive notifications with vibration and sound when new signals are found.
-            </div>
-            <div class="setting-row">
-                <div class="setting-label">
-                    Auto-Generate
-                    <span class="status-indicator" id="autoGenStatus"></span>
-                </div>
-                <label class="toggle-switch">
-                    <input type="checkbox" class="toggle-input" id="autoGenerateToggle" onchange="toggleAutoGenerate()">
-                    <span class="toggle-slider"></span>
-                </label>
-            </div>
-        </div>
-        
-        <!-- Notifications -->
-        <div class="setting-group">
-            <div class="setting-title">🔔 Notifications</div>
-            <div class="setting-description">
-                Enable browser notifications and vibration alerts for new signals.
-            </div>
-            <div class="setting-row">
-                <div class="setting-label">Notifications</div>
-                <button onclick="requestNotifications()" style="
-                    background: #4caf50;
-                    color: #fff;
-                    border: none;
-                    padding: 8px 16px;
-                    border-radius: 20px;
-                    font-size: 12px;
-                    font-weight: 600;
-                    cursor: pointer;
-                " id="notifBtn">Enable</button>
-            </div>
-        </div>
-        
-        <!-- Signal Tracker -->
-        <div class="setting-group">
-            <div class="setting-title">📊 Signal Tracker</div>
-            <div class="setting-description">
-                Track signal performance in real-time. Automatically updates when signals hit TP or SL.
-            </div>
-            <div class="setting-row">
-                <div class="setting-label">
-                    Tracker Status
-                    <span class="status-indicator active"></span>
-                </div>
-                <div style="font-size: 12px; color: #4caf50; font-weight: 600;">ACTIVE</div>
-            </div>
-        </div>
-        
-        <!-- About -->
-        <div class="setting-group">
-            <div class="setting-title">ℹ️ About</div>
-            <div class="setting-description">
-                MzanziFx Trading Terminal<br>
-                <strong>Version 5.18</strong><br>
-                <strong>Fixed:</strong><br>
-                • Signal generation working ✅<br>
-                • Progress completes to 100% ✅<br>
-                • S/R lines drawing ✅<br>
-                • News timeout (10s max)<br><br>
+        <div class="section">
+            <div class="section-title">📱 About</div>
+            <div class="info-text">
+                <strong>MzanziFx Trading Terminal</strong><br>
+                Professional SMC/ICT Trading Analysis<br><br>
+                
+                <strong>Version 5.13</strong><br>
+                <strong>What's New:</strong><br>
+                • S/R labels centered on chart<br>
+                • Trendlines removed from display<br>
+                • Clean horizontal lines only<br>
+                • Current price line (blue)<br><br>
+                
                 <strong>Features:</strong><br>
-                • Circular progress loader<br>
-                • Structure-based TP/SL<br>
-                • Entry trigger tracking<br><br>
-                <strong>Decimal Precision:</strong><br>
-                • Gold/Bitcoin/JPY: 2 decimals<br>
-                • Forex pairs: 4 decimals<br><br>
-                <strong>ZAR Targets (0.01 lot):</strong><br>
-                • TP1: R18-25 (~R20)<br>
-                • TP2: R30-60 (~R45)<br>
-                • TP3: R60-100 (~R80)<br>
-                • SL: <R30 (~R25)<br><br>
-                <strong>Analysis Methods:</strong><br>
-                • Smart Money Concepts (SMC)<br>
-                • Inner Circle Trader (ICT)<br>
-                • Concept Trading Refined (CTR)<br>
-                • Wyckoff Method<br><br>
-                <strong>Features:</strong><br>
-                • Real-time SMC/ICT drawing<br>
-                • Auto signal generation<br>
-                • Live signal tracking<br>
+                • Live Deriv WebSocket data<br>
+                • MT5-style candlesticks<br>
+                • Support/Resistance detection<br>
+                • Order block analysis<br>
+                • Fair value gaps<br>
                 • Premium/Discount zones<br>
-                • Order blocks & FVG detection<br>
+                • News sentiment integration<br>
+                • Signal generation & tracking<br>
+                • PWA installation<br><br>
+                
+                <strong>Supported Symbols:</strong><br>
+                • XAUUSD (Gold)<br>
+                • EURUSD<br>
+                • GBPUSD<br>
+                • USDJPY<br>
+                • USDCAD<br>
+                • AUDUSD<br>
+                • AUDCAD<br>
+                • BTCUSD (Bitcoin)<br><br>
+                
+                <strong>Timeframes:</strong><br>
+                • 1 Minute (60s)<br>
+                • 5 Minutes (300s)<br>
+                • 15 Minutes (900s)<br>
+                • 30 Minutes (1800s)<br>
+                • 1 Hour (3600s)<br>
+                • 4 Hours (14400s)<br>
+                • 1 Day (86400s)<br><br>
+                
+                <strong>TP/SL Targets (0.01 lot):</strong><br>
+                TP1: R20<br>
+                TP2: R45<br>
+                TP3: R80<br>
+                SL: R25<br><br>
+                
+                Developed with ❤️ for traders
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">📊 Data Source</div>
+            <div class="info-text">
+                Live market data from Deriv.com via WebSocket API<br>
+                Real-time tick updates<br>
+                Historical candle aggregation
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">🔔 Notifications</div>
+            <div class="info-text">
+                Signal alerts enabled<br>
+                Browser notification permission required<br>
+                Vibration feedback on mobile
             </div>
         </div>
     </div>
-    
+
     <div class="bottom-nav">
         <div class="nav-item" onclick="window.location.href='index.html'">
             <div class="nav-icon">📊</div>
-            <div class="nav-label">Charts</div>
+            <div class="nav-label">Chart</div>
         </div>
         <div class="nav-item" onclick="window.location.href='signals.html'">
             <div class="nav-icon">⚡</div>
@@ -268,59 +203,5 @@
             <div class="nav-label">Settings</div>
         </div>
     </div>
-    
-    <script>
-        // Load saved settings
-        window.addEventListener('load', () => {
-            const autoGenerate = localStorage.getItem('autoGenerate') === 'true';
-            document.getElementById('autoGenerateToggle').checked = autoGenerate;
-            updateAutoGenStatus(autoGenerate);
-            
-            // Check notification permission
-            if ('Notification' in window) {
-                if (Notification.permission === 'granted') {
-                    document.getElementById('notifBtn').textContent = 'Enabled';
-                    document.getElementById('notifBtn').style.background = '#2a2a2a';
-                }
-            }
-        });
-        
-        function toggleAutoGenerate() {
-            const enabled = document.getElementById('autoGenerateToggle').checked;
-            localStorage.setItem('autoGenerate', enabled ? 'true' : 'false');
-            updateAutoGenStatus(enabled);
-            
-            // Show notification
-            alert(enabled ? '🤖 Auto-generate activated!\n\nSignals will be generated every 5 minutes.' : 
-                          '🛑 Auto-generate deactivated');
-        }
-        
-        function updateAutoGenStatus(active) {
-            const indicator = document.getElementById('autoGenStatus');
-            if (active) {
-                indicator.classList.add('active');
-            } else {
-                indicator.classList.remove('active');
-            }
-        }
-        
-        function requestNotifications() {
-            if ('Notification' in window) {
-                Notification.requestPermission().then(permission => {
-                    if (permission === 'granted') {
-                        document.getElementById('notifBtn').textContent = 'Enabled';
-                        document.getElementById('notifBtn').style.background = '#2a2a2a';
-                        
-                        new Notification('🎉 Notifications Enabled!', {
-                            body: 'You will now receive trading signal alerts',
-                            icon: '/icon-192.png'
-                        });
-                    }
-                });
-            } else {
-                alert('⚠️ Notifications not supported on this device');
-            }
-        }
-    </script>
 </body>
 </html>
